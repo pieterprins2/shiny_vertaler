@@ -1,0 +1,1131 @@
+{
+  "cultural_date_format": "%d-%m-%Y",
+  "languages": ["key", "nl", "en"],
+  "translation": [
+    {
+      "key": "ui_tekst",
+      "nl": "Verander Taal",
+      "en": "Change Language"
+    },
+    {
+      "key": "windowTitle",
+      "nl": "Beleggersprofiel - B.A. van Doorn",
+      "en": "investor Profile - B.A. vanDoorn"
+    },
+    {
+      "key": "intro_head",
+      "nl": "Inleiding",
+      "en": "Introduction"
+    },
+    {
+      "key": "intro_text",
+      "nl": "Rendement en risico gaan hand in hand. Wie een hoog rendement nastreeft, zal helaas ook een hoger risico op een minder goede uitkomst moeten kunnen en willen dragen. Het is van belang om dat zo helder mogelijk te hebben en van tijd tot tijd te actualiseren. Om een indruk te krijgen van de mate waarin u beleggingsrisico <strong>kan<\/strong> en <strong>wil<\/strong> dragen is een vragenlijst samengesteld. Op de volgende tabbladen staan die vragen. Ze gaan enerzijds in op aspecten van uw feitelijke situatie die van invloed kunnen zijn op de mate waarin u beleggingsrisico's kunt lopen. Anderzijds zijn er vragen die gaan over uw bereidheid om beleggingsrisico's te dragen. De beantwoording door u van de vragen resulteren in een inschatting van het beleggersprofiel dat bij u past.<br><br>De informatie stelt B.A. van Doorn in staat zich voor uw belangen in te zetten.",
+      "en": "Return and risk go hand in hand. Unfortunately, those who strive for a high return will also have to be able and willing to bear a higher risk of a less good outcome. It is important to have this as clear as possible and to update it from time to time. To get an impression of the extent to which you <strong>can<\/strong> and <strong>want to<\/strong> bear investment risk, a questionnaire has been compiled. Those questions are listed in the following tabs. On the one hand, they address aspects of your factual situation that may affect the extent to which you can run investment risks. On the other hand, there are questions about your willingness to bear investment risks. Your answers to the questions result in an assessment of the investor profile that suits you. <br><br>The information enables B.A. van Doorn to defend your interests."
+    },
+    {
+      "key": "vul_naam_in_text",
+      "nl": "Vul hieronder uw naam in",
+      "en": "Enter your name below"
+    },
+    {
+      "key": "uw_naam",
+      "nl": "Uw naam",
+      "en": "Your name"
+    },
+    {
+      "key": "u_krijgt_rapport_text",
+      "nl": "Nadat dit beleggersprofiel is ingevuld worden de resultaten ervan verwerkt in een rapport. Dit rapport wordt via e-mail naar u toegestuurd.",
+      "en": "After this investor profile has been completed, the results are processed in a report. This report will be sent to you via email."
+    },
+    {
+      "key": "email_placeholder",
+      "nl": "mijzelf@voorbeeld.nl, mijzelf2@voorbeeld2.nl",
+      "en": "me@example.com, me2@example2.com"
+    },
+    {
+      "key": "uw_emailadressen",
+      "nl": "Uw e-mailadres (of meerdere, gescheiden door een komma)",
+      "en": "Your email address (or several, separated by a comma)"
+    },
+    {
+      "key": "intro_vraag_entiteit",
+      "nl": "Sommige vragen, of de formulering ervan, hangen af van het soort entiteit dat u vertegenwoordigt.",
+      "en": "Some questions, or their wording, depend on the type of entity you represent."
+    },
+    {
+      "key": "maak_keuze",
+      "nl": "Maak hieronder een keuze",
+      "en": "Make a choice below"
+    },
+    {
+      "key": "maak_een_keuze",
+      "nl": "Maak een keuze",
+      "en": "Make a choice"
+    },
+    {
+      "key": "voor_wie",
+      "nl": "Voor wie vult u dit formulier in",
+      "en": "Who are you filling out this form for?"
+    },
+    {
+      "key": "prive",
+      "nl": "mijzelf als privé persoon",
+      "en": "myself as a private person"
+    },
+    {
+      "key": "enof",
+      "nl": "mijn partner en mijzelf (een en/of rekening)",
+      "en": "my partner and myself (a joint account)"
+    },
+    {
+      "key": "bv",
+      "nl": "een besloten vennootschap",
+      "en": "a private limited company"
+    },
+    {
+      "key": "ve",
+      "nl": "een vereniging",
+      "en": "an association"
+    },
+    {
+      "key": "st",
+      "nl": "een stichting",
+      "en": "a foundation"
+    },
+    {
+      "key": "ov",
+      "nl": "een ander type organisatie",
+      "en": "A different type of organization"
+    },
+    {
+      "key": "volgende_pagina",
+      "nl": "Ga naar de volgende pagina",
+      "en": "Go to the next page"
+    },
+    {
+      "key": "vorige_pagina",
+      "nl": "Ga terug",
+      "en": "Go back"
+    },
+    {
+      "key": "de_bv",
+      "nl": "de besloten vennootschap",
+      "en": "the private limited company"
+    },
+    {
+      "key": "de_ve",
+      "nl": "de vereniging",
+      "en": "the association"
+    },
+    {
+      "key": "de_st",
+      "nl": "de stichting",
+      "en": "the foundation"
+    },
+    {
+      "key": "de_ov",
+      "nl": "de organisatie",
+      "en": "the orginazation"
+    },
+    {
+      "key": "wat_is_de_naam_van",
+      "nl": "Wat is de naam van",
+      "en": "What is the name of"
+    },
+    {
+      "key": "de_naam_van",
+      "nl": "De naam van",
+      "en": "The name of"
+    },
+    {
+      "key": "naam_van",
+      "nl": "Naam van",
+      "en": "Name of"
+    },
+    {
+      "key": "intro_pensioenbrief_bv",
+      "nl": "Indien de besloten vennootschap een pensioenbrief heeft, kunt u dit mogelijk gebruiken bij het invullen van dit beleggersprofiel.",
+      "en": "If the private limited company has a pension letter, you may be able to use it when filling in this investor profile."
+    },
+    {
+      "key": "intro_pensioenbrief1",
+      "nl": "Indien",
+      "en": "If"
+    },
+    {
+      "key": "intro_pensioenbrief2",
+      "nl": "een beleggingsstatuut heeft",
+      "en": "has an investment statute"
+    },
+    {
+      "key": "intro_pensioenbrief3",
+      "nl": "kunt u dit mogelijk gebruiken bij het invullen van dit beleggersprofiel.",
+      "en": "you may be able to use this when filling in this investor profile."
+    },
+    {
+      "key": "heeft_bv_pensioenbrief",
+      "nl": "Heeft de besloten vennootschap een pensioenbrief?",
+      "en": "Does the private limited company have a pension letter?"
+    },
+    {
+      "key": "heeft",
+      "nl": "Heeft",
+      "en": "Does"
+    },
+    {
+      "key": "een_beleggingsstatuut",
+      "nl": "een beleggingsstatuut?",
+      "en": "have an investment statute?"
+    },
+    {
+      "key": "ja",
+      "nl": "Ja,",
+      "en": "Yes,"
+    },
+    {
+      "key": "nee",
+      "nl": "Nee,",
+      "en": "No,"
+    },
+    {
+      "key": "bv_heeft_geen_pensioenbrief",
+      "nl": "Ja, de besloten vennootschap heeft een pensioenbrief",
+      "en": "Yes, the private limited company has a pension letter"
+    },
+    {
+      "key": "bv_heeft_pensioenbrief",
+      "nl": "Nee, de besloten vennootschap heeft geen pensioenbrief",
+      "en": "No, the private limited company does not have a pension letter"
+    },
+    {
+      "key": "heeft_beleggingsstatuut",
+      "nl": "heeft een beleggingsstatuut",
+      "en": "has an investment statute"
+    },
+    {
+      "key": "heeft_geen_beleggingsstatuut",
+      "nl": "heeft geen beleggingsstatuut",
+      "en": "does not have an investment statute"
+    },
+    {
+      "key": "voer_geldig_emailadres_in",
+      "nl": "Voer een geldig e-mailadres in. Het moet een \"@\" bevatten en daarna nog een punt",
+      "en": "Please provide a valid e-mailaddress. It should contain a \"@\" and a dot after that"
+    },
+    {
+      "key": "beleggingsdoelstelling",
+      "nl": "Beleggingsdoelstelling",
+      "en": "Investment objective"
+    },
+    {
+      "key": "beleggingsdoelstelling_intro",
+      "nl": "De vraag hieronder gaat over het doel dat u met uw beleggingen nastreeft.",
+      "en": "The question below is about the objective you are pursuing with your investments."
+    },
+    {
+      "key": "hou_geen_rekening_met_so",
+      "nl": "Houd hierbij geen rekening met eventuele stortingen of onttrekkingen. Die kunt u aangeven op een van de volgende pagina's.",
+      "en": "Do not take into account any deposits or withdrawals. You can indicate this on one of the following pages."
+    },
+    {
+      "key": "beleggingsdoelstelling_intro_org",
+      "nl": "De vragen hieronder gaat over het doel dat met de beleggingen van ",
+      "en": "The questions below are about the objective of the investments of "
+    },
+    {
+      "key": "wordt_nagestreefd",
+      "nl": "wordt nagestreefd.",
+      "en": "."
+    },
+    {
+      "key": "maak_keuze_alle_bovenstaande_vragen",
+      "nl": "Maak een keuze bij alle bovenstaande vragen",
+      "en": "Make a choice for all the above questions"
+    },
+    {
+      "key": "beleggingsdoelstelling_org_toelichten",
+      "nl": "Hier kunt u de beleggingsdoelstelling van",
+      "en": "Here you can provide more information on the investment objective of"
+    },
+    {
+      "key": "nader_toelichten",
+      "nl": "nader toelichten.",
+      "en": "."
+    },
+    {
+      "key": "financiele_situatie",
+      "nl": "Financiële situatie",
+      "en": "Financial situation"
+    },
+    {
+      "key": "doel_volgende_vragen_indruk_mate_waarin",
+      "nl": "Het doel van de volgende vragen is om een indruk te krijgen van de mate waarin",
+      "en": "The purpose of the following questions is to get an impression of the extent to which"
+    },
+    {
+      "key": "doel_volgende_vragen_indruk_mate_waarin_u_risico",
+      "nl": "Het doel van de volgende vragen is om een indruk te krijgen van de mate waarin u risico",
+      "en": "The purpose of the following questions is to get an impression of the extent to which you"
+    },
+    {
+      "key": "kunt",
+      "nl": "kunt",
+      "en": "are able to"
+    },
+    {
+      "key": "wilt",
+      "nl": "wilt",
+      "en": "are willing to"
+    },
+    {
+      "key": "kan",
+      "nl": "kan",
+      "en": "is able to"
+    },
+    {
+      "key": "nemen",
+      "nl": "nemen.",
+      "en": "take risks."
+    },
+    {
+      "key": "lopen_gezien_de_financiele_situatie_op_de_volgende_pagina",
+      "nl": "lopen gezien uw financiële situatie. Op een volgende pagina kunt u vervolgens aangeven in hoeverre u beleggingsrisico",
+      "en": "take risk with the investments. On a subsequent page you can indicate the extent to which you"
+    },
+    {
+      "key": "bereid_is",
+      "nl": "bereid is",
+      "en": "is willing to"
+    },
+    {
+      "key": "met_de_beleggingen_risico",
+      "nl": "met de beleggingen risico",
+      "en": "take risk with the investments"
+    },
+    {
+      "key": "lopen_gezien_de_financiele_situatie",
+      "nl": "lopen gezien de financiële situatie.",
+      "en": "given the financial situation."
+    },
+    {
+      "key": "volgende_pagina_aangeven_in_hoeverre",
+      "nl": "Op een volgende pagina kan worden aangegeven in hoeverre",
+      "en": "On a subsequent page you can indicate to what extent"
+    },
+    {
+      "key": "beleggingsrisico_te_nemen",
+      "nl": "beleggingsrisico te nemen.",
+      "en": "take investment risks."
+    },
+    {
+      "key": "ga_terug_naar_start",
+      "nl": "Ga terug naar Start (alles opnieuw invullen)",
+      "en": "Go back to Start (fill in all again)"
+    },
+    {
+      "key": "voor_toelichting_zie_rapport",
+      "nl": "(voor toelichting zie rapport)",
+      "en": "(for explanation see report)"
+    },
+    {
+      "key": "projecties_in_rapport",
+      "nl": "Projecties in rapport",
+      "en": "Projections in report"
+    },
+    {
+      "key": "tabel_in_rapport",
+      "nl": "Tabel in rapport",
+      "en": "Table in report"
+    },
+    {
+      "key": "kennis_en_ervaring",
+      "nl": "Kennis en ervaring",
+      "en": "Knowledge and experience"
+    },
+    {
+      "key": "risicobereidheid",
+      "nl": "Risicobereidheid",
+      "en": "Risk appetite"
+    },
+    {
+      "key": "op_deze_pagina_vragen_over_de_mate_waarin",
+      "nl": "Op deze pagina een aantal vragen over de mate waarin",
+      "en": "On this page a number of questions about the extent to which"
+    },
+    {
+      "key": "risico_te_nemen_met_de_beleggingen",
+      "nl": "risico te nemen met de beleggingen.",
+      "en": "take risks with the investments."
+    },
+    {
+      "key": "op_deze_pagina_vragen_over_de_mate_waarin_u",
+      "nl": "Op deze pagina een aantal vragen over de mate waarin u",
+      "en": "On this page a number of questions about the extent to which you are"
+    },
+    {
+      "key": "bereid_bent",
+      "nl": "bereid bent",
+      "en": "willing to"
+    },
+    {
+      "key": "startvermogen_en_so",
+      "nl": "Startvermogen en eventuele bijstortingen of onttrekkingen",
+      "en": "Starting capital and any additional deposits or withdrawals"
+    },
+    {
+      "key": "hoe_groot_is_het_startvermogen",
+      "nl": "Hoe groot is het te beleggen vermogen?",
+      "en": "What is the amount of capital to be invested?"
+    },
+    {
+      "key": "vraag_periodieke_so",
+      "nl": "Wilt u periodieke bijstortingen of onttrekkingen doen?",
+      "en": "Do you want to make periodic additional deposits or withdrawals?"
+    },
+    {
+      "key": "nee_zonder_komma",
+      "nl": "Nee",
+      "en": "No"
+    },
+    {
+      "key": "jaarlijks_bijstorten",
+      "nl": "Ik wil jaarlijks bijstorten",
+      "en": "I want to make annual deposits"
+    },
+    {
+      "key": "jaarlijks_onttrekken",
+      "nl": "Ik wil jaarlijks onttrekken",
+      "en": "I want to withdraw annually"
+    },
+    {
+      "key": "hoe_groot_bijstorting",
+      "nl": "Hoe groot is deze jaarlijkse bijstorting?",
+      "en": "What is the amount of this annual deposit?"
+    },
+    {
+      "key": "hoe_groot_onttrekking",
+      "nl": "Hoe groot is deze jaarlijkse onttrekking?",
+      "en": "What is the amount of this annual withdrawal?"
+    },
+    {
+      "key": "visuele_keuze_rd_rm_stap1",
+      "nl": "Visuele keuze Risicodragend/Risicomijdend, stap 2 (van 2)",
+      "en": "Choosing visually, more risky/less risky, step 1 (of 2)"
+    },
+    {
+      "key": "visuele_keuze_rd_rm_stap2",
+      "nl": "Visuele keuze Risicodragend/Risicomijdend, stap 1 (van 2)",
+      "en": "Choosing visually, more risky/less risky, step 2 (of 2)"
+    },
+    {
+      "key": "op_deze_pagina_twee_risicoprofielen",
+      "nl": "Op deze pagina staan twee risicoprofielen. Voor nadere toelichting bij deze grafieken druk onderaan deze pagina op de knop.",
+      "en": "This page shows two risk profiles. For further explanation of these graphs, press the button at the bottom of this page."
+    },
+    {
+      "key": "toelichting_grafieken",
+      "nl": "Toelichting bij de grafieken",
+      "en": "Explanation of the graphs"
+    },
+    {
+      "key": "de_keuze_die_u_maakte_staat_in_het_midden",
+      "nl": "De keuze die u maakte op de vorige pagina staat in het midden. Links en rechts daarvan staan twee alternatieven.  Voor nadere toelichting bij deze grafieken druk onderaan deze pagina op de knop.",
+      "en": "The choice you made on the previous page is in the middle. To the left and right of it are two alternatives.  For further explanation of these graphs, press the button at the bottom of this page."
+    },
+    {
+      "key": "grafieken_toelichting_intro",
+      "nl": "In de grafieken worden twee risicoprofielen naast elkaar weergegeven. De verticale as geeft het 3-jaars rendement weer en de horizontale as hoe vaak in duizend gevallen dit rendement kan voorkomen.",
+      "en": "The graphs show two risk profiles side by side. The vertical axis shows the 3-year return and the horizontal axis shows how often in a thousand cases this return can occur."
+    },
+    {
+      "key": "getoonde_bedragen_in_toelichting_grafieken",
+      "nl": "De getoonde bedragen zijn bedragen na 3 jaar, uitgaande van het te beleggen vermogen van",
+      "en": "The amounts shown are amounts after 3 years, based on the capital to be invested of"
+    },
+    {
+      "key": "eventuele_so_buiten_beschouwing_gelaten",
+      "nl": "Hierbij zijn eventuele stortingen of onttrekkingen buiten beschouwing gelaten.",
+      "en": "Any deposits or withdrawals are not taken into account."
+    },
+    {
+      "key": "toelichting_grafieken_gunstig_ongunstig",
+      "nl": "\"Gunstig\" wil zeggen beter dan 95% van de gevallen, \"ongunstig\" slechter dan 95% van de gevallen.",
+      "en": "\"favorable\" means better than 95% of cases, \"unfavorable\" worse than 95% of cases."
+    },
+    {
+      "key": "toelichting_grafieken_grotere_spreiding",
+      "nl": "Hoe groter de spreiding van de uitkomsten, hoe risicovoller het profiel. Het verschil tussen deze twee is duidelijk. Het profiel links heeft duidelijk meer spreiding in de uitkomsten.",
+      "en": "The greater the spread of the outcomes, the riskier the profile. The difference between these two is obvious. The profile on the left clearly has more spread in the outcomes."
+    },
+    {
+      "key": "grafieken_toelichting_intro2",
+      "nl": "In de grafieken worden drie risicoprofielen naast elkaar weergegeven. In het midden staat het profiel dat u koos op de vorige pagina. Rechts en links daarvan staan resp. een risicovoller en een minder risicovol profiel. De verticale as geeft het 3-jaars rendement weer en de horizontale as hoe vaak in duizend gevallen dit rendement kan voorkomen.",
+      "en": "The graphs show three risk profiles side by side. In the middle is the profile you chose on the previous page. To the right and left of it are a riskier and a less risky profile, respectively. The vertical axis shows the 3-year return and the horizontal axis shows how often in a thousand cases this return can occur."
+    },
+    {
+      "key": "toelichting_grafieken_grotere_spreiding2",
+      "nl": "Hoe groter de spreiding van de uitkomsten, hoe risicovoller het profiel.",
+      "en": "The greater the spread of the outcomes, the riskier the profile."
+    },
+    {
+      "key": "driejaars_rendement_op_jaarbasis",
+      "nl": "driejaars rendement op jaarbasis",
+      "en": "annualized, three year return"
+    },
+    {
+      "key": "aantal_per_duizend_gevallen",
+      "nl": "aantal per duizend gevallen in de simulatie",
+      "en": "number per thousand cases in the simulation"
+    },
+    {
+      "key": "profiel_met_hoger_risico",
+      "nl": "(profiel met hoger risico)",
+      "en": "(profile with a higher risk)"
+    },
+    {
+      "key": "profiel_met_lager_risico",
+      "nl": "(profiel met lager risico)",
+      "en": "(profile with a lower risk)"
+    },
+    {
+      "key": "gunstig",
+      "nl": "gunstig",
+      "en": "favorable"
+    },
+    {
+      "key": "ongunstig",
+      "nl": "ongunstig",
+      "en": "unfavorable"
+    },
+    {
+      "key": "gematigd",
+      "nl": "gematigd",
+      "en": "moderate"
+    },
+    {
+      "key": "jaars_horizon",
+      "nl": "jaar horizon",
+      "en": "year horizon"
+    },
+    {
+      "key": "keuze_vorige_pagina",
+      "nl": "(de keuze gemaakt op de vorige pagina)",
+      "en": "(the choice made on the previous page)"
+    },
+    {
+      "key": "per_jaar_afko",
+      "nl": "p.j.",
+      "en": "p.y."
+    },
+    {
+      "key": "vermogen",
+      "nl": "vermogen",
+      "en": "initial capital"
+    },
+    {
+      "key": "duurzaamheid",
+      "nl": "Duurzaamheid",
+      "en": "Sustainability"
+    },
+    {
+      "key": "intro_duurzaamheid",
+      "nl": "Bij de opbouw van een beleggingsportefeuille spelen veel aspecten een rol. Daarbij kan gedacht worden aan verwachte waardeontwikkeling als gevolg van winstgroei in de toekomst, financiële en operationele bedrijfsrisico’s en aan de bijdrage aan de spreiding van de totale portefeuille.",
+      "en": "Many aspects play a role in building an investment portfolio. This includes expected value development as a result of future profit growth, financial and operational business risks and the deposit to the diversification of the total portfolio."
+    },
+    {
+      "key": "uitleg_duurzaamheid",
+      "nl": "Een aantal van deze aspecten hebben de laatste jaren meer aandacht gekregen en vallen onder de noemer “duurzaamheid”. Denk daarbij aan milieu-aspecten zoals CO2-uitstoot, sociale aspecten zoals arbeidsomstandigheden en gelijke beloning, en aspecten op het gebied van goed ondernemingsbestuur. Deze aspecten vallen onder de noemer ESG (Environmental, Social en Governance aspecten) en worden ook wel \"duurzaamheidsfactoren\" genoemd.",
+      "en": "A number of these aspects have received more attention in recent years and fall under the heading of \"sustainability\". This includes environmental aspects such as CO2 emissions, social aspects such as working conditions and equal pay, and aspects in the field of good corporate governance. These aspects fall under the heading of ESG (Environmental, Social and Governance aspects) and are also called \"sustainability factors\"."
+    },
+    {
+      "key": "ba_moet_uitvragen",
+      "nl": "Beleggingsondernemingen moeten, in het kader van Europese regelgeving, hun klanten vragen naar hun voorkeur voor duurzaamheid.",
+      "en": "Investment firms must, within the framework of European regulations, ask their clients about their preference for sustainability."
+    },
+    {
+      "key": "eu_taxonomie",
+      "nl": "De Europese Commissie heeft een zogenaamde \"Europese Taxonomie\" opgesteld. Dit is een classificatie van economische activiteiten met daarbij de vermelding of deze groen zijn en bijdragen aan de ambitie van klimaatneutraliteit. Deze lijst is in ontwikkeling en momenteel gaat het vooral om klimaatverandering en duurzaamheid.",
+      "en": "The European Commission has drawn up a so-called \"European Taxonomy\". This is a classification of economic activities with an indication of whether they are green and contribute to the ambition of climate neutrality. This list is under development and currently it is mainly about climate change and sustainability."
+    },
+    {
+      "key": "duurzame_beleggingen_zijn",
+      "nl": "\"Duurzame beleggingen\" zijn beleggingen in bedrijven waarvan de activiteiten bijdragen aan hierboven genoemde ESG-doelen.",
+      "en": "\"Sustainable investments\" are investments in companies whose activities contribute to the ESG goals mentioned above."
+    },
+    {
+      "key": "overig",
+      "nl": "Overig",
+      "en": "Other"
+    },
+    {
+      "key": "overige_aspecten_toelichten",
+      "nl": "Bij het beheer van de portefeuille kunnen veel aspecten een rol spelen. In dit beleggersprofiel zijn de belangrijkste aan de orde gekomen. Als er belangrijke aspecten ontbreken, dan kunt u deze hieronder toelichten.",
+      "en": "Many aspects can play a role in managing the portfolio. The most important ones have been discussed in this investor profile. If any important aspects are missing, you can explain them below."
+    },
+    {
+      "key": "hier_nader_toelichten",
+      "nl": "Hier kunt u dit, indien gewenst, nader toelichten",
+      "en": "Here you can explain this in more detail, if desired"
+    },
+    {
+      "key": "belangrijke_informatie",
+      "nl": "Belangrijke informatie",
+      "en": "Important information"
+    },
+    {
+      "key": "disclaimer",
+      "nl": "De scenario's zijn gebaseerd op ervaringscijfers. Voor de verwachte opbrengst van Nederlandse staatsobligaties is een waarde gebruikt van 2,5%, voor wereldwijde aandelen 5,4%, met een risico van respectievelijk 4% en 14% en een licht negatieve onderlinge correlatie van -0,2. Gepoogd is weer te geven wat op die basis realistische scenario's kunnen zijn. De Europese Centrale Bank streeft een inflatie na van 2%. De getoonde bedragen zijn nominaal en daarbij is dus geen rekening gehouden met inflatie. Cijfers moeten worden geïnterpreteerd als schattingen. Ze vormen geen garantie voor de toekomst. De toekomst kan beter of slechter uitpakken dan de uitersten in de simulatie. Er is geen rekening gehouden met kosten.",
+      "en": "The scenarios are based on historical experience. A value of 2.5% was used for the expected yield of Dutch government bonds, 5.4% for the return of global equities, with a risk of 4% and 14% respectively and a slightly negative correlation of -0.2. An attempt has been made to show what realistic scenarios can be on that basis. The European Central Bank aims for an inflation rate of 2%. The amounts shown are nominal and therefore do not take inflation into account. Figures should be interpreted as estimates. They are no guarantee for the future. The future can turn out better or worse than the extremes in the simulation. Costs have not been taken into account."
+    },
+    {
+      "key": "rapport",
+      "nl": "Rapport",
+      "en": "Report"
+    },
+    {
+      "key": "rapport_maken_en_versturen",
+      "nl": "Rapport maken en resultaten versturen",
+      "en": "Create report and send results"
+    },
+    {
+      "key": "als_u_op_onderstaande_knop_klikt",
+      "nl": "Als u op onderstaande knop klikt, wordt een rapport gegenereerd met als titel 'Beleggersprofiel', gevolgd door uw naam, en het tijdstip. Het bestand wordt naar uw email-adres(-sen) gestuurd. Ook komt het terecht in uw 'Downloads' folder. Van daar kunt u het openen of verplaatsten naar een geschikte plek op uw computer. Tevens wordt een overzicht met de resultaten naar B.A. van Doorn gestuurd.",
+      "en": "If you click on the button below, a report will be generated with the title 'Investor profile', followed by your name, and the time. The file will be sent to your email address(es). It will also end up in your 'Downloads' folder. From there, you can open it or move it to a convenient place on your computer. An overview of the results will also be sent to B.A. van Doorn."
+    },
+    {
+      "key": "profiel",
+      "nl": "profiel",
+      "en": "profile"
+    },
+    {
+      "key": "jaar",
+      "nl": "jaar",
+      "en": "years"
+    },
+    {
+      "key": "jaarlijkse_bijstorting",
+      "nl": "jaarlijkse bijstorting",
+      "en": "yearly contribuiton"
+    },
+    {
+      "key": "jaarlijkse_onttrekking",
+      "nl": "jaarlijkse onttrekking",
+      "en": "yearly withdrawal"
+    },
+    {
+      "key": "geen_jaarlijkse_bijstortingen_of_onttrekkingen",
+      "nl": "Geen jaarlijkse bijstortingen of onttrekkingen",
+      "en": "No additional annual deposits or withdrawals"
+    },
+    {
+      "key": "inflatie",
+      "nl": "inflatie",
+      "en": "inflation"
+    },
+    {
+      "key": "jaarlijkse_bijstorting_van",
+      "nl": "Jaarlijkse bijstorting van",
+      "en": "Yearly contribuiton of"
+    },
+    {
+      "key": "jaarlijkse_onttrekking_van",
+      "nl": "Jaarlijkse onttrekking van",
+      "en": "Yearly withdrawal of"
+    },
+    {
+      "key": "rapport_maken",
+      "nl": "rapport maken",
+      "en": "generating report"
+    },
+    {
+      "key": "rapport_versturen",
+      "nl": "rapport versturen",
+      "en": "send report"
+    },
+    {
+      "key": "rapport_gereed",
+      "nl": "rapport gereed",
+      "en": "report is ready"
+    },
+    {
+      "key": "frequentie",
+      "nl": "frequentie",
+      "en": "Frequency"
+    },
+    {
+      "key": "voer_bedrag_in",
+      "nl": "Voer een bedrag in",
+      "en": "Please enter an amount"
+    },
+    {
+      "key": "onttrekking_moet_kleiner_zijn_dan_tien_pct_startvermogen",
+      "nl": "Onttrekking moet minder zijn dan 10% van het startvermogen",
+      "en": "Withdrawal must be less than 10% of the initial capital"
+    },
+    {
+      "key": "private_beleggingen",
+      "nl": "Private beleggingen",
+      "en": "Private investments"
+    },
+    {
+      "key": "private_beleggingen_zijn_intro",
+      "nl": "Private beleggingen zijn beleggingen in niet-beursgenoteerde bedrijven of andere activa. Ze zijn slecht toegankelijk voor de gemiddelde belegger en vinden meestal plaats via specifieke beleggingsfondsen.",
+      "en": "Private investments are investments in unlisted companies or other assets. They are difficult to access for the average investor and usually take place through specific investment funds."
+    },
+    {
+      "key": "private_beleggingen_zijn_heel_divers",
+      "nl": "Private beleggingen zijn heel divers. Ze kunnen onderdeel uitmaken van het risicodragende deel van de portefeuille, zoals <em>private equity<\/em> maar ook van het risicomijdende deel, zoals <em>private debt<\/em>. Andere voorbeelden van private beleggingen zijn investeringen in startende bedrijven, <em>venture capital<\/em> en private vastgoedbeleggingen.",
+      "en": "Private investments are very diverse. They can be part of the risk-bearing part of the portfolio, such as <em>private equity<\/em>, but also of the risk-averse part, such as <em>private debt<\/em>. Other examples of private investments include investments in start-ups, <em>venture capital<\/em>, and private real estate investments."
+    },
+    {
+      "key": "private_beleggingen_voordelen",
+      "nl": "Een voordeel van private beleggingen is het potentieel hogere rendement. Een ander voordeel is dat de risicospreiding van de portefeuille als geheel erdoor toeneemt.",
+      "en": "An advantage of private investments is the potentially higher return. Another advantage is that it increases the diversification of the portfolio as a whole."
+    },
+    {
+      "key": "private_beleggingen_nadelen",
+      "nl": "Nadelen zijn de slechte verhandelbaarheid en de hoge kosten. Uitstappen tussentijds is niet of nauwelijks mogelijk. Het inzicht in de precieze waarde van de belegging gedurende de looptijd is niet altijd optimaal.",
+      "en": "Disadvantages are the poor tradability and the high costs. It is difficult to sell positions before maturty of the investment. Insight into the exact value of the investment before maturity is not always optimal."
+    },
+    {
+      "key": "private_beleggingen_kosten",
+      "nl": "De kosten van private beleggingen zijn hoger dan die van beleggingen in beursgenoteerde bedrijven. Deze kosten zijn vaak het hoogst aan het begin van de looptijd.",
+      "en": "The costs of private investments are higher than those of investments in listed instruments. These costs are often highest in the initial stage."
+    },
+    {
+      "key": "private_beleggingen_duidelijkheid_horizon",
+      "nl": "Private beleggingen vergen dus, vanwege de kosten bij aanvang en de slechte verhandelbaarheid, duidelijkheid omtrent de beleggingshorizon.",
+      "en": "So, because of the costs involved and the poor tradability, private investments require clarity about the investment horizon."
+    },
+    {
+      "key": "private_beleggingen_mogelijk_geschikt",
+      "nl": "Deze beleggingen zijn mogelijk geschikt voor cliënten met een aanzienlijk vermogen om te beleggen, die op zoek zijn naar beleggingsmogelijkheden buiten de traditionele publieke markten, en die duidelijkheid hebben over de beleggingshorizon.",
+      "en": "These investments may be suitable for clients with significant investment assets, who are looking for investment opportunities outside of traditional public markets, and who have clarity about the investment horizon."
+    },
+    {
+      "key": "private_beleggingen_bavd_kan_helpen",
+      "nl": "B.A. van Doorn kan u toegang bieden tot deze beleggingsmogelijkheden. Indien u dit wenst kan uw vermogensbeheerder de mogelijkheden op dit gebied met u bespreken.",
+      "en": "B.A. van Doorn can offer you access to these investment opportunities. If you wish, your asset manager can discuss the possibilities in this area with you."
+    },
+    {
+      "key": "hieronder_vraag_interesse_private_beleggingen",
+      "nl": "Hieronder vragen wij naar uw interesse voor private beleggingen.",
+      "en": "Below we ask you about your interest in private investments."
+    },
+    {
+      "key": "vraag",
+      "nl": "Vraag",
+      "en": "Question"
+    },
+    {
+      "key": "antwoord",
+      "nl": "Antwoord",
+      "en": "Answer"
+    },
+    {
+      "key": "te_beleggen_vermogen_en_evt_so",
+      "nl": "Te beleggen vermogen en eventuele bijstortingen of onttrekkingen",
+      "en": "Initial capital and deposits or withdrawals, if any"
+    },
+    {
+      "key": "email_adres",
+      "nl": "e-mail adres",
+      "en": "email address"
+    },
+    {
+      "key": "dit_beleggersprofiel_is_ingevuld_voor",
+      "nl": "Dit beleggersprofiel is ingevuld voor",
+      "en": "This investor profile has been completed for"
+    },
+    {
+      "key": "rapport_beleggersprofiel",
+      "nl": "Rapport Beleggersprofiel",
+      "en": "Report Investor Profile"
+    },
+    {
+      "key": "dit_is_een_rapport",
+      "nl": "Dit is een rapport van het door u ingevulde Beleggersprofiel. Het bevat een tabel van de vragen en de door u gegeven antwoorden, het 3-jaars risico- en rendementsprofiel en projecties van de waarde-ontwikkeling van het te beleggen vermogen tot uw beleggingshorizon. Daarbij wordt rekening gehouden met eventuele stortingen of onttrekkingen. U kunt dit rapport bewaren voor uw administratie. Het kan ook van pas komen in het contact met uw vermogensbeheerder.",
+      "en": "This is a report of the Investor Profile you have completed. It contains a table of the questions and the answers you have given, the 3-year risk and return profile and projections of the value development of the assets to be invested in relation to your investment horizon. Any deposits or withdrawals are taken into account. You can keep this report for your records. It can also come in handy when contacting your asset manager."
+    },
+    {
+      "key": "in_de_benamingen_van_profielen",
+      "nl": "In de benamingen van profielen staat RD voor risicodragend (aandelen wereldwijd) en RM voor risicomijdend (Nederlandse staatsobligaties). De getallen geven percentages weer. RD70RM30 staat dus bijvoorbeeld voor 70% aandelen wereldwijd en 30% Nederlandse staatsobligaties.",
+      "en": "In the names of profiles, RD stands for risk-bearing (global equities) and RM for risk-averse (Dutch government bonds). The numbers represent percentages. RD70RM30, for example, stands for 70% global equities and 30% Dutch government bonds."
+    },
+    {
+      "key": "beleggersprofiel",
+      "nl": "Beleggersprofiel",
+      "en": "Investor Profile"
+    },
+    {
+      "key": "tabel_met_vragen_antwoorden_voorlopige_conclusie",
+      "nl": "Tabel met de vragen, uw antwoorden en de voorlopige conclusie",
+      "en": "Table with the questions, your answers and the preliminary conclusion"
+    },
+    {
+      "key": "toelichting_tabel",
+      "nl": "Toelichting bij de tabel",
+      "en": "Explanation of the table"
+    },
+    {
+      "key": "voorlopige_conclusie_werkwijze_uitleg",
+      "nl": "De \"voorlopige conclusie\" is de meest voorzichtige van de uitkomsten van de categorieën beleggingsdoelstelling, financiële situatie, risicobereidheid en de visuele keuzes aan de hand van de grafieken. De reden hiervoor is dat bijvoorbeeld een grote risicobereidheid niet kan leiden tot een hoger risicoprofiel als de financiële situatie dat niet toelaat. Zo is een lage risicobereidheid ook leidend en kan deze niet gecompenseerd worden door bijvoorbeeld een hoge beleggingsdoelstelling.",
+      "en": "The \"preliminary conclusion\" is the most cautious of the outcomes of the categories of investment objective, financial situation, risk appetite and the visual choices made on the basis of the graphs. The reason for this is that, for example, a high risk appetite cannot lead to a higher risk profile if the financial situation does not allow it. A low risk appetite is also leading and cannot be compensated by, for example, an ambitious investment objective."
+    },
+    {
+      "key": "kennis_en_ervaring_zijn_belangrijk",
+      "nl": "Kennis en ervaring zijn belangrijk, maar het is niet van tevoren duidelijk hoe dit moet meewegen in de uiteindelijke conclusie. Dit zal afhangen van de specifieke situatie. Dit kan een van de onderwerpen zijn in een gesprek met uw vermogensbeheerder.",
+      "en": "Knowledge and experience are important, but it is not clear in advance how this should weigh in the final conclusion. This will depend on the specific situation. This can be one of the topics in a conversation with your asset manager."
+    },
+    {
+      "key": "het_kortere_termijn_rendement_en_risico",
+      "nl": "Het kortere termijn rendement en risico",
+      "en": "The shorter-term return and risk"
+    },
+    {
+      "key": "twee_strategische_asset_classes",
+      "nl": "B.A. van Doorn gaat bij de opbouw van haar portefeuilles uit van twee strategische vermogenscategorieën. Nederlandse staatsobligaties voor het risicomijdende (afgekort met RM) deel en wereldwijde aandelen voor het risicodragende (RD) deel. Voor de verwachte opbrengst van Nederlandse staatsobligaties is een waarde gebruikt van 2,5%, voor wereldwijde aandelen 5,4%, met een risico van respectievelijk  4% en 14,5% en  een licht negatieve onderlinge correlatie van -0,2. De correlatie is een maatstaf voor de onderlinge samenhang van beide categorieën door de tijd heen.",
+      "en": "B.A. van Doorn builds its portfolios on the basis of two strategic asset classes. Dutch government bonds for the risk-averse (abbreviated to RM) part and global equities for the risk-bearing (RD) part. A value of 2.5% was used for the expected yield of Dutch government bonds, 5.4% for global equities, with a risk of 4% and 14.5% respectively, and a slightly negative correlation of -0.2. The correlation is a measure of the interrelationship of both categories over time."
+    },
+    {
+      "key": "de_correlatie_varieert",
+      "nl": "De correlatie varieert in de loop der tijd maar was gemiddeld licht negatief. Het geeft aan dat als aandelen stijgen in waarde, obligaties een lichte neiging vertonen om te dalen in waarde en vice versa.",
+      "en": "The correlation varies over time but was slightly negative on average. It indicates that as stocks rise in value, bonds show a slight tendency to decline in value and vice versa."
+    },
+    {
+      "key": "bij_de_projectie_van_de_waarde",
+      "nl": "Bij de projectie van de waarde-ontwikkeling van uw vermogen wordt gebruik gemaakt van rendement- en risicocijfers. B.A. van Doorn sluit hierbij aan op de cijfers zoals vermeld in het advies van de Commissie Parameters van het ministerie van Sociale Zaken en Werkgelegenheid. Gepoogd is weer te geven wat op die basis realistische scenario's kunnen zijn. De Europese Centrale Bank streeft een inflatie na van 2%. De getoonde bedragen zijn nominaal en daarbij is dus geen rekening gehouden met inflatie. Cijfers moeten worden geïnterpreteerd als schattingen. Ze vormen geen garantie voor de toekomst. De toekomst kan beter of slechter uitpakken dan de uitersten in de simulatie. Er is geen rekening gehouden met kosten.",
+      "en": "The projection of the value development of your assets uses return and risk figures. B.A. van Doorn is in line with the figures as stated in the advice of the Parameters Committee of the Ministry of Social Affairs and Employment. An attempt has been made to show what realistic scenarios can be on that basis. The European Central Bank aims for an inflation rate of 2%. The amounts shown are nominal and therefore do not take inflation into account. Figures should be interpreted as estimates. They are no guarantee for the future. The future can turn out better or worse than the extremes in the simulation. Costs have not been taken into account."
+    },
+    {
+      "key": "in_de_figuur_hieronder",
+      "nl": "In de figuur hieronder een illustratie van het driejaars risico en rendement behorende bij het profiel",
+      "en": "The figure below illustrates the three-year risk and return associated with the profile"
+    },
+    {
+      "key": "dat_voortvloeit_uit_antwoorden",
+      "nl": "dat voortvloeit uit de door u gegeven antwoorden op de vragen (de \"voorlopige conclusie\" in de tabel hierboven).",
+      "en": "resulting from the answers you have given to the questions (the \"preliminary conclusion\" in the table above)."
+    },
+    {
+      "key": "de_getallen_in_de_benaming_daarvan",
+      "nl": "De getallen in de benaming daarvan geven percentages weer. Het gaat in dit geval dus om",
+      "en": "The numbers in the name of these represent percentages. So in this case, it is"
+    },
+    {
+      "key": "op_de_verticale_as_staat_het_rendement",
+      "nl": "Op de verticale as staat het rendement, op de horizontale as hoe vaak dit kan voorkomen per duizend gevallen. \"Gunstig\" wil zeggen beter dan 95% van de gevallen en \"ongunstig\" slechter dan 95% van de gevallen. Hierbij is geen rekening gehouden met eventuele stortingen of onttrekkingen. Zie voor dit laatste de grafiek in de volgende paragraaf.",
+      "en": "The vertical axis shows the return, the horizontal axis shows how often this can occur per thousand cases. \"Favorable\" means better than 95% of cases and \"unfavorable\" worse than 95% of cases. This does not take into account any deposits or withdrawals. For the latter, see the graph in the next paragraph."
+    },
+    {
+      "key": "wereldwijde_aandelen_100",
+      "nl": "100% wereldwijde aandelen",
+      "en": "100% global equities"
+    },
+    {
+      "key": "pct_wereldwijde_aandelen_en",
+      "nl": "% wereldwijde aandelen en",
+      "en": "% global equities and"
+    },
+    {
+      "key": "nl_obligaties_100",
+      "nl": "100% Nederlandse staatsobligaties",
+      "en": "100% Dutch government bonds"
+    },
+    {
+      "key": "pct_nl_obligaties",
+      "nl": "% Nederlandse staatsobligaties",
+      "en": "% Dutch government bonds"
+    },
+    {
+      "key": "projecties_van_de_waardeontwikkeling",
+      "nl": "Projecties van de waarde-ontwikkeling van uw vermogen",
+      "en": "Projections of the value development of your assets"
+    },
+    {
+      "key": "hieronder_de_projecties",
+      "nl": "Hieronder de projecties van de waarde-ontwikkeling tot aan uw beleggingshorizon. Hierbij zijn het te beleggen vermogen en het gekozen profiel de uitgangspunten. De projecties geven op basis van dezelfde simulatie duizend paden weer die de waarde van het te beleggen vermogen",
+      "en": "Below are the projections of the value of your investments over time, up to your investment horizon. The initial capital and the chosen profile are the starting points. Based on the same simulation, the projections show a thousand paths the value of the capital"
+    },
+    {
+      "key": "rekening_houdend_met_onttrekkingen",
+      "nl": "rekening houdend met de jaarlijkse onttrekking,",
+      "en": "taking into account the annual withdrawal,"
+    },
+    {
+      "key": "rekening_houdend_met_bijstortingen",
+      "nl": "rekening houdend met de jaarlijkse bijstorting,",
+      "en": "taking into account the annual additional deposit,"
+    },
+    {
+      "key": "kan_volgen_de_einddatum",
+      "nl": "kan volgen. De einddatum (uw",
+      "en": "can follow. The end date (your"
+    },
+    {
+      "key": "wordt_weergegeven_met_een_verticale_lijn",
+      "nl": "-jaars beleggingshorizon) wordt weergegeven met een verticale lijn. Het gunstige, het ongunstige en het gematigde scenario zijn hetzelfde als op de eerdere illustratie. Het verschil is dat ze hier worden weergegeven als een waarde-ontwikkeling in de loop der tijd. Zo is zichtbaar dat op termijn een vermogensverlies weliswaar niet waarschijnlijk is, maar wel tot de mogelijkheden behoort. De 2% inflatie per jaar, zoals nagestreefd door de ECB, wordt weergegeven met een blauwe lijn.",
+      "en": "-year investment horizon) is represented by a vertical line. The favorable, the unfavorable and the moderate scenarios are the same as in the previous illustration. The difference is that they are shown here as a value development over time. This shows that although a loss of capital is not likely in the long term, it is a possibility. The 2% inflation per year, as pursued by the ECB, is represented by a blue line."
+    },
+    {
+      "key": "deze_projecties_uw_vermogensbeheerder",
+      "nl": "Deze projecties van de waarde-ontwikkeling van uw vermogen in relatie tot uw beleggingsdoelstelling zullen onderwerp van gesprek zijn met uw vermogensbeheerder.",
+      "en": "These projections of the value of your assets in relation to your investment objective will be the subject of discussion with your asset manager."
+    },
+    {
+      "key": "de_linker_illustratie",
+      "nl": "De illustratie links",
+      "en": "The illustration on the left"
+    },
+    {
+      "key": "de_rechter_illustratie",
+      "nl": "De illustratie rechts",
+      "en": "The illustration on the right"
+    },
+    {
+      "key": "de_midden_illustratie",
+      "nl": "De illustratie in het midden (de keuze gemaakt op de vorige pagina)",
+      "en": "The illustration in the middle (the choice made on the previous page)"
+    },
+    {
+      "key": "welke_figuur_in_eerste_instantie",
+      "nl": "Welke figuur spreekt u in eerste instantie het meest aan?",
+      "en": "Which figure appeals to you the most at first?"
+    },
+    {
+      "key": "spreekt_een_van_beide_u_meer_aan",
+      "nl": "Spreekt een van beide alternatieven u meer aan dan uw keuze op de vorige pagina?",
+      "en": "Does either alternative appeal to you more than your choice on the previous page?"
+    },
+    {
+      "key": "dank_u_wel",
+      "nl": "Dank u wel!",
+      "en": "Thank You!"
+    },
+    {
+      "key": "rapport_is_gemaakt",
+      "nl": "Het rapport is gemaakt. Het bevindt zich in uw downloads folder en is ook naar uw emailadres verstuurd. De informatie is tevens verstuurd naar B.A. van Doorn.",
+      "en": "The report has been made. It is located in your downloads folder and has been sent to your email address as well. The information has also been sent to B.A. van Doorn."
+    },
+    {
+      "key": "beleggingsstatuut",
+      "nl": "Beleggingsstatuut",
+      "en": "Investment statute (\"Beleggingsstatuut\")"
+    },
+    {
+      "key": "pensioenbrief",
+      "nl": "Pensioenbrief",
+      "en": "Pension letter (\"pensioenbrief\")"
+    },
+    {
+      "key": "voorlopige_conclusie",
+      "nl": "Voorlopige conclusie",
+      "en": "Preliminary conclusion"
+    },
+    {
+      "key": "projecties",
+      "nl": "Projecties",
+      "en": "Projections"
+    },
+    {
+      "key": "tabel",
+      "nl": "Tabel",
+      "en": "Table"
+    },
+    {
+      "key": "resultaat_per_categorie",
+      "nl": "Resultaat per categorie",
+      "en": "Result per category"
+    },
+    {
+      "key": "de_voorlopige_conclusie_is_de_meest_voorzichtige",
+      "nl": "De voorlopige conclusie is het meest voorzichtige van de verschillende categorieën ex kennis en ervaring: ",
+      "en": "The preliminary conclusion is the most cautious of the different categories, excluding knowledge and experience: "
+    },
+    {
+      "key": "vertaling_punten_naar_profiel_uitleg",
+      "nl": "Vertaling punten naar profiel per categorie: het te behalen aantal punten boven het minimale aantal punten wordt in vijf gelijke delen gesplitst. Het behaalde aantal punten valt in een van die vijf gebieden, die corresponderen met een profiel.",
+      "en": "Translation of points into profile per category: the number of points to be obtained above the minimum number of points is split into five equal parts. The number of points obtained falls into one of those five areas, which correspond to a profile."
+    },
+    {
+      "key": "vertaling_punten_naar_profiel_uitleg_toelichting",
+      "nl": "Beleggingsdoelstelling, financiële situatie en risicobereidheid zijn ieder beperkend. Zo kan een mindere financiële situatie niet gecompenseerd worden door een grote risicobereidheid of een hoge doelstelling. Een lage risicobereidheid is ook leidend en kan niet gecompenseerd worden door een hoge doelstelling. Omdat het niet a priori duidelijk is hoe kennis en ervaring mee moet wegen wordt dit niet meegenomen in de voorlopige conclusie. Het kan wel meegenomen worden in het gesprek.",
+      "en": "Investment objective, financial situation and risk appetite are each limiting. For example, a less ample financial situation cannot be compensated by a high risk appetite or an ambitious objective. A low risk appetite is also leading and cannot be compensated by an ambitious objective. Because it is not a priori clear how knowledge and experience should be taken into account, this is not included in the preliminary conclusion. It can of course be part of the conversation."
+    },
+    {
+      "key": "categorie",
+      "nl": "categorie",
+      "en": "category"
+    },
+    {
+      "key": "punten",
+      "nl": "punten",
+      "en": "points"
+    },
+    {
+      "key": "aantal_vragen",
+      "nl": "aantal vragen",
+      "en": "questions"
+    },
+    {
+      "key": "kennis_en_ervaring_telt_niet_mee",
+      "nl": "kennis en ervaring (telt niet mee)",
+      "en": "knowledge and experience (no influence on outcome)"
+    },
+    {
+      "key": "visueel",
+      "nl": "visuele keuzes",
+      "en": "visual choices"
+    },
+    {
+      "key": "beleggingsdoelstelling_kleine_letter",
+      "nl": "beleggingsdoelstelling",
+      "en": "investment objective"
+    },
+    {
+      "key": "risicobereidheid_kleine_letter",
+      "nl": "risicobereidheid",
+      "en": "risk appetite"
+    },
+    {
+      "key": "financiële_situatie_kleine_letter",
+      "nl": "financiele situatie",
+      "en": "financial situation"
+    },
+    {
+      "key": "kennis_ervaring",
+      "nl": "kennis en ervaring",
+      "en": "knowledge and experience"
+    },
+    {
+      "key": "inhoud",
+      "nl": "Inhoud",
+      "en": "Contents"
+    },
+    {
+      "key": "van",
+      "nl": "van",
+      "en": "of"
+    },
+    {
+      "key": "pagina",
+      "nl": "Pagina",
+      "en": "Page"
+    },
+    {
+      "key": "tijdstip_van_opsturen",
+      "nl": "Tijdstip van opsturen",
+      "en": "Time of sending"
+    },
+    {
+      "key": "toelichting_beleggingsdoelstelling",
+      "nl": "Toelichting beleggingsdoelstelling",
+      "en": "Explanation of investment objective"
+    },
+    {
+      "key": "profiel_obv_beleggingsdoelstelling",
+      "nl": "Profiel o.b.v. beleggingsdoelstelling",
+      "en": "Profile based on investment objective"
+    },
+    {
+      "key": "profiel_obv_financiele_situatie",
+      "nl": "Profiel o.b.v. financiele situatie",
+      "en": "Profile based on financial situation"
+    },
+    {
+      "key": "profiel_obv_kennis_en_ervaring",
+      "nl": "Profiel o.b.v. kennis en ervaring",
+      "en": "Profile based on knowledge and experience"
+    },
+    {
+      "key": "profiel_obv_risicobereidheid",
+      "nl": "Profiel o.b.v. risicobereidheid",
+      "en": "Profile based on risk appetite"
+    },
+    {
+      "key": "te_beleggen_vermogen",
+      "nl": "Te beleggen vermogen",
+      "en": "Amount to be invested"
+    },
+    {
+      "key": "jaarlijkse_bijstorting_of_onttrekking",
+      "nl": "Jaarlijkse bijstorting of onttrekking",
+      "en": "Annual deposit or withdrawal"
+    },
+    {
+      "key": "keuzes_adhv_grafieken",
+      "nl": "Keuzes aan de hand van de grafieken",
+      "en": "Choices based on the graphs"
+    },
+    {
+      "key": "eerste_keuze_visueel",
+      "nl": "Eerste keuze visueel",
+      "en": "First visual choice"
+    },
+    {
+      "key": "tweede_keuze_visueel",
+      "nl": "Tweede keuze visueel",
+      "en": "Second visual choice"
+    },
+    {
+      "key": "voorlopige_conclusie_alles_bijelkaar",
+      "nl": "Voorlopige conclusie o.b.v. uw beleggingsdoelstelling, financiële situatie, risicobereidheid en visuele keuzes samen",
+      "en": "Preliminary conclusion based on your investment objective, financial situation, risk appetite and visual choices together"
+    },
+    {
+      "key": "toelichting_eventuele_overige_zaken",
+      "nl": "Toelichting eventuele overige zaken",
+      "en": "Explanation of any other matters"
+    },
+    {
+      "key": "beleggingsstatuut_aanwezig",
+      "nl": "beleggingsstatuut aanwezig",
+      "en": "investment statute is available"
+    },
+    {
+      "key": "geen_beleggingsstatuut_aanwezig",
+      "nl": "geen beleggingsstatuut aanwezig",
+      "en": "investment statute is not available"
+    },
+    {
+      "key": "pensioenbrief_aanwezig",
+      "nl": "pensioenbrief aanwezig",
+      "en": "Pension letter (\"pensioenbrief\") is available"
+    },
+    {
+      "key": "geen_pensioenbrief_aanwezig",
+      "nl": "geen pensioenbrief aanwezig",
+      "en": "Pension letter (\"pensioenbrief\") is not available"
+    },
+    {
+      "key": "n_v_t",
+      "nl": "n.v.t.",
+      "en": "n.a."
+    },
+    {
+      "key": "hier_kunt_u_beleggingsdoelstelling_nader_toelichten",
+      "nl": "Hier kunt u, indien gewenst, uw beleggingsdoelstelling nader toelichten",
+      "en": "Here you can explain your investment objective in more detail, if desired"
+    },
+    {
+      "key": "u_heeft_aangegeven_dat_de_bv_een_pensioenbrief_heeft_sturen",
+      "nl": "U heeft aangegeven dat de besloten vennootschap een pensioenbrief heeft. Deze kunt u sturen naar uw vermogensbeheerder.",
+      "en": "You have indicated that the private limited company has a pension letter (\"pensioenbrief\"). You can send this to your asset manager."
+    },
+    {
+      "key": "u_heeft_aangegeven_dat",
+      "nl": "U heeft aangegeven dat",
+      "en": "You indicated that"
+    },
+    {
+      "key": "een_beleggingsstatuut_heeft",
+      "nl": "een beleggingsstatuut heeft.",
+      "en": "has an investment statute."
+    },
+    {
+      "key": "deze_kunt_u_sturen_naar_uw_vermogensbeheerder",
+      "nl": "Deze kunt u sturen naar uw vermogensbeheerder.",
+      "en": "You can send this to your asset manager."
+    }
+  ]
+}

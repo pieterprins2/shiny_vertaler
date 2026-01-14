@@ -1,0 +1,187 @@
+---
+output: 
+
+  pdf_document:
+    latex_engine: pdflatex
+    fig_width: 8
+    fig_height: 6
+
+toc-title: "Inhoud"
+
+mainfont: "Arial"
+
+params:
+  plot1: NA
+  plot2: NA
+  logo: NA
+  table: NA
+  vette_regels: NA
+  naam: NA
+  entiteit: NA
+  naam_entiteit: NA
+  naam_in_file_en_aanhef: NA
+  tijdstip: NA
+  inflatie: NA
+  ret_nl_obl: NA
+  ret_wereld_aandelen: NA
+  sd_nl_obl: NA
+  sd_wereld_aandelen: NA
+  cor_wereld_aandelen_nl_obl: NA
+  profiel_conclusie: NA
+  horizon: NA
+  startvermogen: NA
+  bijstorting: NA
+  taal: NA
+
+header-includes:
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \lhead{}
+- \rhead{}
+- \lfoot{}
+- \cfoot{}
+- \renewcommand{\headrulewidth}{0pt}
+- \usepackage{lastpage}
+- \newcommand{\pagelabel}{`r if (params$taal == "nl") "Pagina" else "Page"`}
+- \newcommand{\oflabel}{`r if (params$taal == "nl") "van" else "of"`}
+- \pagestyle{fancy}
+- \fancyhf{}
+- \fancyfoot[R]{\textit{\pagelabel~\thepage~\oflabel~\pageref{LastPage}}}
+- \usepackage{longtable}
+- \setlength{\headheight}{100pt}
+- \addtolength{\topmargin}{-50pt}
+- \fancypagestyle{plain}{}
+- \renewcommand{\headrulewidth}{0pt}
+- \usepackage[scaled]{helvet}
+- \renewcommand*\familydefault{\sfdefault}
+
+fontsize: 11pt
+geometry: left = 2.25cm, right = 2.25cm, top = 2cm, bottom = 3cm
+
+---
+```{r setup, include=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(scales)
+library(shiny.i18n)
+
+#vertaling
+vertaler <- Translator$new(translation_json_path = json_output)
+
+vertaler$set_translation_language(params$taal)  # From Shiny param
+
+knitr::opts_chunk$set(echo = FALSE)
+
+pdf.options(encoding = "CP1250") #voor weergave Euro symbool, anders alleen EUR. Paar uur zoeken
+
+```
+
+
+```{=latex}
+
+\begin{center}
+\includegraphics[width=12cm]{logo.png}
+\end{center}
+\begin{center}
+{\Huge `r str_c(vertaler$t("beleggersprofiel"), " ", params$naam_in_file_en_aanhef)`}\\[1em]
+{\large `r params$tijdstip`}
+\end{center}
+\renewcommand{\contentsname}{`r vertaler$t("inhoud")`}  % Translated "Contents"
+\tableofcontents
+```
+
+```{=latex}
+\fancypagestyle{plain}{
+  \fancyhead[C]{
+    \ifnum\thepage>1
+      \includegraphics[width=6cm]{logo.png}
+    \fi
+  }
+  \renewcommand{\headrulewidth}{0pt} % remove the header rule
+}
+\pagestyle{plain}
+```
+
+# `r vertaler$t("rapport_beleggersprofiel")`
+
+```{r echo=FALSE, results='asis'}
+cat(vertaler$t("dit_is_een_rapport"))
+```
+
+```{r echo=FALSE, results='asis'}
+cat(vertaler$t("in_de_benamingen_van_profielen"))
+```
+
+## `r vertaler$t("tabel_met_vragen_antwoorden_voorlopige_conclusie")`
+
+```{r data, warning = FALSE, echo=FALSE}
+tabel <- 
+  params$table %>% 
+  as_tibble()
+
+tabel %>% 
+  kbl(format = "latex", booktabs = TRUE, longtable = TRUE, linesep = "\\addlinespace") %>% 
+  kable_styling(latex_options = c("striped", "hover", "condensed", "repeat_header"), position = "center", font_size = 10, repeat_header_text = "tabel - vervolg van vorige pagina", repeat_header_method = "replace", full_width =FALSE) %>% 
+    column_spec(1, width = "23em") |> 
+    column_spec(2, width = "23em") |> 
+    row_spec(params$vette_regels, bold = TRUE) #werkt dus niet op regel 7 ????!!!!
+
+```
+
+## `r vertaler$t("toelichting_tabel")`
+
+```{r echo=FALSE, results='asis'}
+cat(vertaler$t("voorlopige_conclusie_werkwijze_uitleg"))
+```
+
+```{r echo=FALSE, results='asis'}
+cat(vertaler$t("kennis_en_ervaring_zijn_belangrijk"))
+```
+
+## `r vertaler$t("het_kortere_termijn_rendement_en_risico")`
+
+```{r echo=FALSE, results='asis'}
+cat(vertaler$t("twee_strategische_asset_classes"))
+```
+```{r echo=FALSE, results='asis'}
+cat(vertaler$t("de_correlatie_varieert"))
+```
+
+<!-- B.A. van Doorn gaat bij de opbouw van haar portefeuilles uit van twee strategische vermogenscategorieën. Nederlandse staatsobligaties voor het risicomijdende (afgekort met RM) deel en wereldwijde aandelen voor het risicodragende (RD) deel. Voor de verwachte opbrengst van Nederlandse staatsobligaties is een waarde gebruikt van `r round(100*params$ret_nl_obl, 2)`%, voor wereldwijde aandelen `r round(100*params$ret_wereld_aandelen, 2)`%, met een risico van respectievelijk `r round(100*params$sd_nl_obl, 2)`% en `r round(100*params$sd_wereld_aandelen, 2)`% en een licht negatieve onderlinge correlatie van `r params$cor_wereld_aandelen_nl_obl`. De correlatie is een maatstaf voor de onderlinge samenhang van beide categorieën door de tijd heen. -->
+<!-- De correlatie varieert in de loop der tijd maar was gemiddeld licht negatief. Het geeft aan dat als aandelen stijgen in waarde,  -->
+<!-- obligaties een lichte neiging vertonen om te dalen in waarde en vice versa.  -->
+<!-- Voor het geven van een beeld hoe in de toekomst de waarde van portefeuilles van verschillende samenstellingen zich zouden kunnen ontwikkelen gebruiken we een simulatiemethode. De simulatie genereert duizend verschillende mogelijkheden die zich op basis van deze cijfers zouden kunnen voordoen. Daar zitten heel veel vrij gemiddelde scenario's bij, wat minder hele goede en hele slechte en heel weinig erg goede en erg slechte. -->
+
+```{r echo=FALSE, results='asis'}
+cat(str_c(vertaler$t("in_de_figuur_hieronder"), " ", params$profiel_conclusie, " ", vertaler$t("dat_voortvloeit_uit_antwoorden"), " ", vertaler$t("de_getallen_in_de_benaming_daarvan"), " ", if(!str_detect(params$profiel_conclusie, "RM")) {vertaler$t("wereldwijde_aandelen_100")} else if(!str_detect(params$profiel_conclusie, "RD")) {vertaler$t("nl_obligaties_100")} else {str_c(str_sub(params$profiel_conclusie, 3, 4), vertaler$t("pct_wereldwijde_aandelen_en"), " ", str_sub(params$profiel_conclusie, 7, 8), vertaler$t("pct_nl_obligaties"))}, ". ", vertaler$t("op_de_verticale_as_staat_het_rendement")))
+```
+
+<!-- In de figuur hieronder een illustratie van het driejaars risico en rendement behorende bij het profiel (`r params$profiel_conclusie`) dat voortvloeit uit de door u gegeven antwoorden op de vragen (de "voorlopige conclusie" in de tabel hierboven). De getallen in de benaming daarvan geven percentages weer. Het gaat in dit geval dus om `r if(!str_detect(params$profiel_conclusie, "RM")) {"100% wereldwijde aandelen"} else if(!str_detect(params$profiel_conclusie, "RD")) {"100% Nederlandse staatsobligaties"} else {str_c(str_sub(params$profiel_conclusie, 3, 4), "% wereldwijde aandelen en ", str_sub(params$profiel_conclusie, 7, 8), "% Nederlandse staatsobligaties")}`. Op de verticale as staat het rendement, op de horizontale as hoe vaak dit kan voorkomen per duizend gevallen. "Gunstig" wil zeggen beter dan 95% van de gevallen en "ongunstig" slechter dan 95% van de gevallen. Hierbij is geen rekening gehouden met eventuele stortingen of onttrekkingen. Zie voor dit laatste de grafiek in de volgende paragraaf. -->
+
+```{r echo=FALSE, out.width='6.5in', fig.align="center"}
+knitr::include_graphics(params$plot1)
+```
+
+## `r vertaler$t("projecties_van_de_waardeontwikkeling")`
+
+```{r echo=FALSE, results='asis'}
+cat(str_c(vertaler$t("hieronder_de_projecties"), if(params$bijstorting < 0) {str_c(", ", vertaler$t("rekening_houdend_met_onttrekkingen"))} else if(params$bijstorting > 0) {str_c(", ", vertaler$t("rekening_houdend_met_bijstortingen"), " ")}, vertaler$t("kan_volgen_de_einddatum"), params$horizon, vertaler$t("wordt_weergegeven_met_een_verticale_lijn")))
+```
+
+```{r echo=FALSE, results='asis'}
+cat("\n",vertaler$t("deze_projecties_uw_vermogensbeheerder"))
+```
+<!-- Hieronder de projecties van de waarde-ontwikkeling tot aan uw beleggingshorizon. Hierbij zijn het te beleggen vermogen en het gekozen profiel de uitgangspunten. De projecties geven op basis van dezelfde simulatie duizend paden weer die de waarde van het te beleggen vermogen`r if(params$bijstorting < 0) {", rekening houdend met de jaarlijkse onttrekking,"} else if(params$bijstorting > 0) {", rekening houdend met de jaarlijkse bijstorting,"}` kan volgen. De einddatum (uw `r params$horizon`-jaars beleggingshorizon) wordt weergegeven met een verticale lijn. Het gunstige, het ongunstige en het gematigde scenario zijn hetzelfde als op de eerdere illustratie. Het verschil is dat ze hier worden weergegeven als een waarde-ontwikkeling in de loop der tijd. Zo is zichtbaar dat op termijn een vermogensverlies weliswaar niet waarschijnlijk is, maar wel tot de mogelijkheden behoort. De 2% inflatie per jaar, zoals nagestreefd door de ECB, wordt weergegeven met een blauwe lijn. -->
+
+<!-- Deze projecties van de waarde-ontwikkeling van uw vermogen in relatie tot uw beleggingsdoelstelling zullen onderwerp van gesprek zijn met uw vermogensbeheerder. -->
+
+```{r echo=FALSE, out.width='6.5in', fig.align="center"}
+knitr::include_graphics(params$plot2)
+```
+
+## `r vertaler$t("belangrijke_informatie")`
+
+```{r echo=FALSE, results='asis'}
+cat(vertaler$t("bij_de_projectie_van_de_waarde"))
+```
+<!-- Bij de projectie van de waarde-ontwikkeling van uw vermogen wordt gebruik gemaakt van rendement- en risicocijfers. B.A. van Doorn sluit hierbij aan op de cijfers zoals vermeld in het advies van de Commissie Parameters van het ministerie van Sociale Zaken en Werkgelegenheid. Gepoogd is weer te geven wat op die basis realistische scenario's kunnen zijn. De Europese Centrale Bank streeft een inflatie na van `r round(100*params$inflatie, 0)`%. De getoonde bedragen zijn nominaal en daarbij is dus geen rekening gehouden met inflatie. Cijfers moeten worden geïnterpreteerd als schattingen. Ze vormen geen garantie voor de toekomst. De toekomst kan beter of slechter uitpakken dan de uitersten in de simulatie. Er is geen rekening gehouden met kosten. -->
