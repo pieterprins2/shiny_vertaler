@@ -28,7 +28,6 @@ library(emayili) #email
 #library(polished) #email validate evt
 library(shinyalert)
 
-if (!file.exists("translations/translations.json") || file.mtime("translations/translations.xlsx") > file.mtime("translations/translations.json")) {
   #opzet vertaling vanuit spreadsheet
   df <- read_excel("translations/translations.xlsx", sheet = "Sheet1")
   #vqn excel sheet naar json
@@ -43,14 +42,18 @@ if (!file.exists("translations/translations.json") || file.mtime("translations/t
                         pretty = TRUE, 
                         auto_unbox = TRUE, 
                         na = "null")
+  
+  json_path <- file.path(tempdir(), "translations.json")
+  
   # Save to file
-  writeLines(json_output, "translations/translations.json")
-  cat("JSON regenerated!\n")
-}
-vertaler <- Translator$new(translation_json_path = "translations/translations.json")
-#vast op engels
-vertaler$set_translation_language("nl")
-#vertaling
+  writeLines(json_output, json_path)
+  #writeLines(json_output, "translations/translations.json")
+
+  vertaler <- Translator$new(translation_json_path = json_path)
+  #vertaler <- Translator$new(translation_json_path = "translations/translations.json")
+  #vast op engels
+  vertaler$set_translation_language("nl")
+  #vertaling
 
 #geen liggend streepje in naam, anders werkt het niet in windows, het gaat om de titel op de eerste bladzijde
 
@@ -2360,7 +2363,8 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                        profiel_conclusie = profiel_conclusie(),
                        horizon = horizon(),
                        bijstorting = bijstorting(),
-                       taal = taal()
+                       taal = taal(),
+                       translations_path = json_path
                        )
         
         setProgress(

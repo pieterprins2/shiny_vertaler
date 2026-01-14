@@ -32,6 +32,7 @@ params:
   startvermogen: NA
   bijstorting: NA
   taal: NA
+  translations_path: NA
 
 header-includes:
 - \usepackage{fancyhdr}
@@ -66,7 +67,7 @@ library(scales)
 library(shiny.i18n)
 
 #vertaling
-vertaler <- Translator$new(translation_json_path = json_output)
+vertaler <- Translator$new(translation_json_path = params$translations_path)
 
 vertaler$set_translation_language(params$taal)  # From Shiny param
 
