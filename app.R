@@ -110,11 +110,19 @@ IP <- content(GET("https://api.ipify.org?format=json"))$ip
 #oude SMTP_PASSWORD="tnjjwjpocvslhfur"
 
 smtp <- emayili::server(
-  host = smtp_server,
-  port = smtp_port,
-  username = smtp_username,
+  host = "smtp.gmail.com",
+  port = 587,                # TLS (STARTTLS) – most reliable for Gmail
+  username = Sys.getenv("SMTP_USERNAME"),
   password = Sys.getenv("SMTP_PASSWORD"),
-  max_times = 1
+  # Optional but recommended for Gmail:
+  use_ssl = FALSE,           # Use STARTTLS instead of implicit SSL
+  insecure = FALSE
+  # 
+  # host = smtp_server,
+  # port = smtp_port,
+  # username = smtp_username,
+  # password = Sys.getenv("SMTP_PASSWORD"),
+  # max_times = 1
 )
 
 #colors
