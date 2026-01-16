@@ -105,7 +105,7 @@ smtp_port <- "587" #Sys.getenv("SMTP_PORT")
 smtp_username <- "pieterprins2@gmail.com" #Sys.getenv("SMTP_USERNAME")
 IP <- content(GET("https://api.ipify.org?format=json"))$ip
 
-SMTP_PASSWORD= "ohfs vttt hbty ypts"
+#SMTP_PASSWORD= "ohfs vttt hbty ypts"
 
 #oude SMTP_PASSWORD="tnjjwjpocvslhfur"
 
