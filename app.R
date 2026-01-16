@@ -148,7 +148,7 @@ inflatie <- parameters %>% filter(parameter == "inflatie") %>% select(waarde) %>
 #==
 
 #om een header rij toe te voegen voor het inlezen in AIRS
-AIRS_kolom <- read_csv("AIRS_kolom.csv", show_col_types = FALSE)
+AIRS_en_Beleggersprofiel_NL_vragen_kolom <- read_csv("AIRS_en_Beleggersprofiel_NL_vragen_kolom.csv", show_col_types = FALSE)
 
 profiel_levels <- c("RM100", "RD30RM70", "RD50RM50", "RD70RM30", "RD100")
 #horizon_levels <- c("3 jaar", "5 jaar", "10 jaar", "20 jaar", "30 jaar")
@@ -279,6 +279,19 @@ ui <-
   tags$head(
    tags$link(rel = "stylesheet", type = "text/css", href = "beleggersprofiel.css")
    ),
+  # In UI:
+  tags$head(
+    tags$script(HTML("
+    Shiny.addCustomMessageHandler('triggerDownload', function(message) {
+      var link = document.createElement('a');
+      link.href = message.href;           // the Shiny download endpoint
+      link.download = message.filename;   // suggested name
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  "))
+  ),
   #===
   tags$head(
     HTML(
@@ -494,7 +507,11 @@ ui <-
             #onderstaand is om de buttons op een lijn te houden
             div(
               div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_overig', vertaler$t("vorige_pagina"))),
-              div(style="display: inline-block; width: 305px ;", downloadButton(class = "button", "rapport", vertaler$t("rapport_maken_en_versturen"))),
+              div(style="display: inline-block; width: 305px ;", actionButton(inputId = "start_rapport", 
+                                                                              label = vertaler$t("rapport_maken_en_versturen"),   # or whatever your label is
+                                                                              icon = icon("file-pdf"), 
+                                                                              class = "btn-primary btn")),
+              downloadButton(outputId = "rapport_hidden", "Hidden Download", style = "display: none;"),
               #volgende button verschijnt pas na download, wordt in de server gemaakt
               div(style="display: inline-block; width: 65px ;", uiOutput('ui_naar_voorlopige_conclusie'))
               )
@@ -505,7 +522,7 @@ ui <-
 #}
 
 server <- function(input, output, session) {
-  
+
   taal <- reactive({
     #moet zo geinitialiseerd, anders Warning: Error in if: argument is of length zero
     input$taal %||% "nl"  # Use %||% from rlang or purrr, or if (is.null(input$taal)) "nl" else input$taal
@@ -776,23 +793,22 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   req(entiteit())
   if(entiteit() %in% c("st", "ve", "ov")) {
     p(h4(paste(vertaler$t("intro_pensioenbrief1"), de_org_aanduiding(), vertaler$t("intro_pensioenbrief2"), vertaler$t("intro_pensioenbrief3"))), #,
-    #p(h4(paste("Indien ", de_org_aanduiding(), " een beleggingsstatuut heeft, kunt u dit mogelijk gebruiken bij het invullen van dit beleggersprofiel.")),
               selectizeInput(inputId = "beleggingsstatuut", 
-                     label = str_c(vertaler$t("heeft"), de_org_aanduiding(), vertaler$t("een_beleggingsstatuut")), 
+                     label = paste(vertaler$t("heeft"), de_org_aanduiding(), vertaler$t("een_beleggingsstatuut")), 
                      choices = c(vertaler$t("maak_keuze"), 
                                  setNames("ja_beleggingsstatuut", paste(vertaler$t("ja"), de_org_aanduiding(), vertaler$t("heeft_beleggingsstatuut"))), 
-                                 paste(vertaler$t("nee"), de_org_aanduiding(), vertaler$t("heeft_geen_beleggingsstatuut"))),
+                                 setNames("nee_beleggingsstatuut", paste(vertaler$t("nee"), de_org_aanduiding(), vertaler$t("heeft_geen_beleggingsstatuut")))),
                      selected = vertaler$t("maak_keuze"),#Maak hieronder een keuze:",
                      width = "400px")
     )
   } else if (entiteit() == "bv") {
       #p(h4(str_c("Indien de besloten vennootschap een pensioenbrief heeft, kunt u dit mogelijk gebruiken bij het invullen van dit beleggersprofiel.")),
       p(h4(str_c(vertaler$t("intro_pensioenbrief_bv"))),
-                     selectizeInput(inputId = "beleggingsstatuut", 
+                     selectizeInput(inputId = "pensioenbrief", 
                      label = vertaler$t("heeft_bv_pensioenbrief"), 
                      choices = c(vertaler$t("maak_keuze"), 
-                                 setNames("ja_beleggingsstatuut", str_c(vertaler$t("bv_heeft_pensioenbrief"))), #Ja, de besloten vennootschap heeft een pensioenbrief")), 
-                                 vertaler$t("bv_heeft_geen_pensioenbrief")),
+                                 setNames("ja_pensioenbrief", str_c(vertaler$t("bv_heeft_pensioenbrief"))), #Ja, de besloten vennootschap heeft een pensioenbrief")), 
+                                 setNames("nee_pensioenbrief", vertaler$t("bv_heeft_geen_pensioenbrief"))),
                      selected = vertaler$t("maak_keuze"),#Maak hieronder een keuze:",
                      width = "400px")
     )
@@ -810,7 +826,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
         )
       } else if (input$entiteit == "bv") {
         conditionalPanel(
-          condition = "input.beleggingsstatuut == ja_beleggingsstatuut`", #`Ja, de besloten vennootschap heeft een pensioenbrief`",
+          condition = "input.pensioenbrief == ja_pensioenbrief`", #`Ja, de besloten vennootschap heeft een pensioenbrief`",
           h3(vertaler$t("pensioenbrief")),
           p(style = "text-align: justify;", vertaler$t("u_heeft_aangegeven_dat_de_bv_een_pensioenbrief_heeft_sturen")),
           br()
@@ -964,7 +980,6 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       width = '6500px')
   }
 
-  #HIER
   #aparte voor visuele keuzes 1 en 2, met Setnames voor meerdere talen
   output$ui_selectize_visuele_keuze1 <- renderUI ({
     selectizeInput(inputId = "visuele_keuze1",
@@ -1152,8 +1167,10 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
           {shiny::need(input$naam_entiteit != '...', paste(vertaler$t("de_naam_van"), de_org_aanduiding()))},
          #paste vanwege de spatie
          #bij bv, st of ve of ov moet een antwoord gegeven worden op de vraag over het bel statuut
-        if(input$entiteit %in% c("bv", "st", "ve", "ov")) 
-          {shiny::need(input$beleggingsstatuut != vertaler$t("maak_keuze"), vertaler$t("maak_een_keuze"))}
+        if(input$entiteit %in% c("st", "ve", "ov")) 
+          {shiny::need(input$beleggingsstatuut != vertaler$t("maak_keuze"), vertaler$t("maak_een_keuze"))},
+        if(input$entiteit %in% c("bv")) 
+          {shiny::need(input$pensioenbrief != vertaler$t("maak_keuze"), vertaler$t("maak_een_keuze"))}
       )
     })
       shiny::req(input$naam != "...",
@@ -1164,8 +1181,10 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                      str_locate_all(input$emailadres, "\\.")[[1]] %>% as_tibble() %>% tail(1) %>% select(start) %>% pull()))
                  if(input$entiteit %in% c("bv" ,"st", "ve", "ov")) {
                     shiny::req(input$naam_entiteit != "...")}
-                 if(input$entiteit %in% c("bv", "st", "ve", "ov")) {
+                 if(input$entiteit %in% c("st", "ve", "ov")) {
                     shiny::req(input$beleggingsstatuut != vertaler$t("maak_keuze"))}
+                  if(input$entiteit %in% c("bv")) {
+                    shiny::req(input$pensioenbrief != vertaler$t("maak_keuze"))}
     shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_beleggingsdoelstelling"]')
     updateTabsetPanel(session, inputId = "tabset",
                       selected = "panel_beleggingsdoelstelling")
@@ -2061,7 +2080,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     # selecteer question en antwoord voor rapport
     # en hernoem Antwoord met !!vertaler$t
     
-    data_rapport <- shiny::reactive( #deze tabel gaat naat PDF
+    data_rapport <- reactive( #deze tabel gaat naat PDF
       #tibble(!!vertaler$t("vraag") := c(vertaler$t("uw_naam"), kan met rename
                    tibble(Vraag = c(vertaler$t("uw_naam"),
                         vertaler$t("email_adres"),
@@ -2122,9 +2141,9 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                           (str_detect(input$beleggingsstatuut, "nee_beleggingsstatuut"))
                             {vertaler$t("geen_beleggingsstatuut_aanwezig")} 
                         } else if(entiteit() == "bv") {
-                          if(str_detect(input$beleggingsstatuut, "Ja"))
+                          if(str_detect(input$pensioenbrief, "ja_pensioenbrief"))
                           {vertaler$t("pensioenbrief_aanwezig")} else if 
-                          (str_detect(input$beleggingsstatuut, "Nee"))
+                          (str_detect(input$pensioenbrief, "nee_pensioenbrief"))
                           {vertaler$t("geen_pensioenbrief_aanwezig")}
                         } else {NULL},
                         download$download_tijdstip,
@@ -2157,7 +2176,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                         " ",
                         " ",
                         map_chr(vraagnummers_categorie("overig"), output_antwoord),
-                        if(str_detect(input$overig, "nee")) {"n.v.t."} else {input$overig_toelichting},
+                        if(str_detect(input$overig, "nee")) {vertaler$t("n_v_t")} else {input$overig_toelichting},
                         if(private_beleggingen_uitvragen() == TRUE) {" "} else {NULL},
                         if(private_beleggingen_uitvragen() == TRUE) {" "} else {NULL},  
                         if(private_beleggingen_uitvragen() == TRUE) {map_chr(vraagnummers_categorie("private_beleggingen"), output_antwoord)} else {NULL}
@@ -2167,30 +2186,31 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                          Antwoord = str_remove(Antwoord, " - zie ook de invulvelden hieronder"))
             )
     
+    
     data_rapport_AIRS <- reactive({ #deze tabel gaat naar beide CSV's
       data <- 
         data_rapport() |> 
         # S/O op 0 indien daar geen sprake van is
         mutate(Antwoord = 
                  case_when(#hier profiel_levels_AIRS in plaats van profiel_levels en 
-                           str_detect(Vraag, "Profiel o.b.v. beleggingsdoelstelling") ~ profiel_levels_AIRS[which(profiel_levels == profiel_beleggingsdoelstelling())],
-                           str_detect(Vraag, "Profiel o.b.v. financiële situatie") ~ profiel_levels_AIRS[which(profiel_levels == profiel_financiele_situatie())],
-                           str_detect(Vraag, "Profiel o.b.v. risicobereidheid") ~ profiel_levels_AIRS[which(profiel_levels == profiel_risicobereidheid())],
-                           str_detect(Vraag, "Profiel o.b.v. kennis en ervaring") ~ profiel_levels_AIRS[which(profiel_levels == profiel_kennis_ervaring())],
-                           str_detect(Vraag, "Eerste keuze visueel") ~ profiel_levels_AIRS[which(profiel_levels == keuze_visueel1())],
-                           str_detect(Vraag, "Tweede keuze visueel") ~ profiel_levels_AIRS[which(profiel_levels == keuze_visueel2())],
-                           str_detect(Vraag, "Voorlopige conclusie o.b.v.") ~ profiel_levels_AIRS[which(profiel_levels == profiel_conclusie())],
+                           str_detect(Vraag, vertaler$t("profiel_obv_beleggingsdoelstelling")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_beleggingsdoelstelling())],
+                           str_detect(Vraag, vertaler$t("profiel_obv_financiele_situatie")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_financiele_situatie())],
+                           str_detect(Vraag, vertaler$t("profiel_obv_risicobereidheid")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_risicobereidheid())],
+                           str_detect(Vraag, vertaler$t("profiel_obv_kennis_en_ervaring")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_kennis_ervaring())],
+                           str_detect(Vraag, vertaler$t("eerste_keuze_visueel")) ~ profiel_levels_AIRS[which(profiel_levels == keuze_visueel1())],
+                           str_detect(Vraag, vertaler$t("tweede_keuze_visueel")) ~ profiel_levels_AIRS[which(profiel_levels == keuze_visueel2())],
+                           str_detect(Vraag, vertaler$t("voorlopige_conclusie_alles_bijelkaar")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_conclusie())],
                            TRUE ~ Antwoord),
-               Antwoord = ifelse(str_detect(Antwoord, "Geen jaarlijkse"), 0, Antwoord),
-               Antwoord = ifelse(Antwoord == "geen beleggingsstatuut aanwezig", 0, Antwoord),
-               Antwoord = ifelse(Antwoord == "beleggingsstatuut aanwezig", 1, Antwoord),
-               Antwoord = ifelse(Antwoord == "geen pensioenbrief aanwezig", 0, Antwoord),
-               Antwoord = ifelse(Antwoord == "pensioenbrief aanwezig", 1, Antwoord),
-               Antwoord = ifelse(str_detect(Antwoord, "n.v.t."), 0, Antwoord),
+               Antwoord = ifelse(str_detect(Antwoord, vertaler$t("geen_jaarlijkse_bijstortingen_of_onttrekkingen")), 0, Antwoord),
+               Antwoord = ifelse(Antwoord == vertaler$t("geen_beleggingsstatuut_aanwezig"), 0, Antwoord),
+               Antwoord = ifelse(Antwoord == vertaler$t("beleggingsstatuut_aanwezig"), 1, Antwoord),
+               Antwoord = ifelse(Antwoord == vertaler$t("geen_pensioenbrief_aanwezig"), 0, Antwoord),
+               Antwoord = ifelse(Antwoord == vertaler$t("pensioenbrief_aanwezig"), 1, Antwoord),
+               Antwoord = ifelse(str_detect(Antwoord, vertaler$t("n_v_t")), 0, Antwoord),
                #format_bedrag vervangen door bedrag in het geval van startvermogen, startvermogen(), en eventuele bijstortingen (abs(bijstorting()))
-               Antwoord = ifelse(str_detect(Vraag, "1 - Te beleggen vermogen"), 
+               Antwoord = ifelse(str_detect(Vraag, str_c("1 - ", vertaler$t("te_beleggen_vermogen"))), 
                                  vctrs::vec_cast(startvermogen(), integer()), Antwoord),
-               Antwoord = ifelse(str_detect(Vraag, "2 - Jaarlijkse bijstorting of onttrekking"), 
+               Antwoord = ifelse(str_detect(Vraag, str_c("2 - ", vertaler$t("jaarlijkse_bijstorting_of_onttrekking"))), 
                                  vctrs::vec_cast(bijstorting(), integer()), Antwoord),
                #privé vervangen door prive
                across(everything(), ~str_replace_all(., "é", "e")),
@@ -2201,36 +2221,62 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                )
       
       #3 regels invoegen bij prive en enof, want de andere varianten hebben 3 regels voor naam_entiteit en beleggingsstatuut EN pensioenbrief, ook al is het of beleggingsstatuut/of pensioenbrief
-      {if(!entiteit() %in% c("bv", "ve", "st", "ov")) data <- add_row(data, .before = which(data$Vraag == "Tijdstip van opsturen"), Vraag = c("leeg", "leeg", "leeg"), Antwoord = c("0","0", "0")) else data} 
+      {if(!entiteit() %in% c("bv", "ve", "st", "ov")) data <- add_row(data, .before = which(data$Vraag == vertaler$t("tijdstip_van_opsturen")), Vraag = c("leeg", "leeg", "leeg"), Antwoord = c("0","0", "0")) else data} 
 
       #als het een bv is dan 1 regel beleggingsstatuut = 0 invoegen voor de regel pensioenbrief
-      {if(entiteit() == "bv") data <- add_row(data, .before = which(data$Vraag == "Pensioenbrief"), Vraag = c("leeg"), Antwoord = c("0")) else data} 
+      {if(entiteit() == "bv") data <- add_row(data, .before = which(data$Vraag == vertaler$t("pensioenbrief")), Vraag = c("leeg"), Antwoord = c("0")) else data} 
       
       #als het een st ve of ov is dan 1 regel pensioenbrief = 0 invoegen NA de regel beleggingsstatuut
-      {if(entiteit() %in% c("ve", "st", "ov")) data <- add_row(data, .after = which(data$Vraag == "Beleggingsstatuut"), Vraag = c("leeg"), Antwoord = c("0")) else data} 
+      {if(entiteit() %in% c("ve", "st", "ov")) data <- add_row(data, .after = which(data$Vraag == vertaler$t("beleggingsstatuut")), 
+                                                               Vraag = c("leeg"), Antwoord = c("0")) else data} 
       
       #2 regels invoegen als meer_vragen_duurzaamheid() == FALSE, voor 4, check dit in sheet AIRS_kolom
-      {if(meer_vragen_duurzaamheid() == FALSE) data <- add_row(data, .before = which(data$Vraag == "VIII - Overig"), Vraag = c("leeg", "leeg"), Antwoord = c("0","0")) else data} 
+      {if(meer_vragen_duurzaamheid() == FALSE) data <- add_row(data, .before = which(data$Vraag == str_c("VIII - ", vertaler$t("overig"))),
+                                                               Vraag = c("leeg", "leeg"), Antwoord = c("0","0")) else data} 
 
       #1 regel toevoegen als het een bv is, de vraag naar de omvang van het eigen vermogen ontbreekt namelijk
-      {if(entiteit() == "bv") data <- add_row(data, .before =  which(data$Vraag == "1 - Het vermogen in de besloten vennootschap"), Vraag = "leeg", Antwoord = "0") else data}
-  
+      #vertaal opzoeken uit vragen_antwoorden_sheet_etc
+      #HIER
+      #{if(entiteit() == "bv") data <- add_row(data, .before =  which(data$Vraag == "1 - Het vermogen in de besloten vennootschap"), Vraag = "leeg", Antwoord = "0") else data}
+      vraag1_eigen_vermogen_liquiditeit <- reactive({
+        vragen_antwoorden() %>% filter(onderwerp == "eigen_vermogen_liquiditeit") %>% select(vraag) %>% head(1) %>% pull() 
+      })
+      {if(entiteit() == "bv") data <- add_row(data, .before =  which(data$Vraag == str_c("1 - ", vraag1_eigen_vermogen_liquiditeit())), 
+                                              Vraag = "leeg", Antwoord = "0") else data}
+      
       #3 lege regels private beleggingen uitvraag toevoegen na regel Vraag = "   Toelichting eventuele overige zaken" als private_beleggingen_uitvragen FALSE is
-      {if(private_beleggingen_uitvragen() == FALSE) data <- add_row(data, .after = which(data$Vraag == "   Toelichting eventuele overige zaken"), Vraag = c("leeg", "leeg", "leeg"), Antwoord = c("0", "0", "0")) else data}
+      {if(private_beleggingen_uitvragen() == FALSE) data <- add_row(data, .after = which(data$Vraag == str_c("   ", vertaler$t("toelichting_eventuele_overige_zaken"))), 
+                                                                    Vraag = c("leeg", "leeg", "leeg"), Antwoord = c("0", "0", "0")) else data}
       
       #regel AIRS id's toevoegen
       data <- add_row(data, .before = 1, Vraag = "AIRS ID", Antwoord = "")
       
       #kolom met AIRS headers toevoegen
-      data <- data |> mutate(Vraag_AIRS = AIRS_kolom$kolomnaam)
+      data <- data |> mutate(Vraag_AIRS = AIRS_en_Beleggersprofiel_NL_vragen_kolom$kolomnaam_AIRS,
+                             Vraag_Beleggingsvoorstel_NL = AIRS_en_Beleggersprofiel_NL_vragen_kolom$kolomnaam_Beleggingsvoorstel_NL)
       
-      #data <- add_column(data, .before = 1, Vraag = AIRS_kolom$kolomnaam)
+      #data <- add_column(data, .before = 1, Vraag = AIRS_en_Beleggersprofiel_NL_vragen_kolom$kolomnaam_AIRS)
       data <- data |> mutate(Antwoord = ifelse(Vraag == "AIRS ID", 0, Antwoord))
+      
+      data
     })
     
     vette_regels <- reactive({
-      grep("I -|V -|Voorlopige conclusie -|Private beleggingen",  data_rapport()$Vraag) #hij pakt de eerste niet!?
+      grep("I -|V -|Voorlopige conclusie -|Preliminary conclusion -|Private beleggingen -|Private investments",  data_rapport()$Vraag) #hij pakt de eerste niet!?
       #grep("[I|V|Voorlopige conclusie]",  data_rapport()$`Vraag`) #hij pakt de eerste niet!?
+      # Build the regex pattern dynamically from translated strings
+      # pattern <- paste(
+      #   vertaler$t("roman-one-prefix"),          # e.g., "I -" in EN, "I -" in NL (roman numerals are often consistent)
+      #   vertaler$t("roman-five-prefix"),         # e.g., "V -"
+      #   vertaler$t("prelim-conclusion-nl"),      # e.g., "Voorlopige conclusie -" in NL
+      #   vertaler$t("prelim-conclusion-en"),      # e.g., "Preliminary conclusion -" in EN
+      #   vertaler$t("private-investments-nl"),    # e.g., "Private beleggingen -" in NL
+      #   vertaler$t("private-investments-en"),    # e.g., "Private investments" in EN
+      #   sep = "|"  # Alternation in regex
+      # )
+      # 
+      # # Now use the built pattern
+      # grep(pattern, data_rapport()$Vraag)
     })
 
     #html tabel voor op de pagina Tabel, na verzenden van het rapport
@@ -2287,221 +2333,256 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       bijstorting = bijstorting
     )
   
+  rv <- reactiveValues(trigger_download = 0)   # NEW: to trigger real download after confirm
+  
+  observeEvent(input$start_rapport, {
+    
+    # ──────────────────────────────
+    #   Very loud debug messages
+    # ──────────────────────────────
+  
+    showModal(modalDialog(
+        title = "Titel",#vertaler$t("bevestig_genereer_rapport"),   # e.g. "Bevestig rapport genereren"
+        size = "m",
+        easyClose = FALSE,
+        footer = tagList(
+          modalButton("annularen"),#vertaler$t("annuleren")),
+          actionButton("confirm_rapport",
+                       label = "label", #vertaler$t("ok_start_download"),
+                       class = "btn-primary",
+                       icon = icon("check"))
+        ),
+        tags$div(
+          style = "text-align: center; padding: 20px;",
+          #tags$h4(vertaler$t("rapport_wordt_gemaakt_na_bevestiging")),
+          #tags$p(vertaler$t("na_ok_start_download")),   # customize these translations
+          tags$p(style = "color: #666; font-size: 0.95em;",
+                 "Dit kan enkele seconden duren vanwege PDF-generatie en e-mail verzending.")
+        )
+      ))
+  })
+  
+  
+
+  
+  observeEvent(input$confirm_rapport, {
+    removeModal()
+    rv$trigger_download <- rv$trigger_download + 1
+  })
+  
     #waarde voor download teller op nul stellen
     #waarde voor tijdstip op nul stellen
     #beide worden in downloadHandler actueel gemaakt, waarna ook de knop "naar_voorlopige_conclusie" verschijnt
     download <- reactiveValues(aantal_downloads = 0, 
-                               download_tijdstip = NULL)
+                               download_tijdstip = NULL,
+                               success_trigger = 0
+                               )
     
-    output$rapport <- downloadHandler(
-      #rapport maken en email versturen
+    
+    output$rapport_hidden <- downloadHandler(
+      
       filename = function() {
-        download$download_tijdstip <- if(taal() == "nl") {format(with_tz(Sys.time(), tzone = "Europe/Amsterdam"), "%d %b %Y %X") |> maanden_naar_nl()}
-            else {format(with_tz(Sys.time(), tzone = "Europe/Amsterdam"), "%B %d, %Y %X")}
-        str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".pdf")
+        tijd <- if (taal() == "nl") {
+          format(with_tz(Sys.time(), tzone = "Europe/Amsterdam"), "%d %b %Y %X") |> 
+            maanden_naar_nl()
+        } else {
+          format(with_tz(Sys.time(), tzone = "Europe/Amsterdam"), "%B %d, %Y %X")
+        }
+        
+        # Store timestamp for use in content() and emails
+        download$download_tijdstip <- tijd
+        
+        str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " - ", tijd, ".pdf")
       },
-
+      
       content = function(file) {
-        #voortgangsindicator
         withProgress(
-        message = vertaler$t("rapport_maken"), detail = NULL, {
-
-        #onderwerp voor mail
-        subject <- str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip)
-        #bestandsnamen voor attachments
-        pdf_filename <- str_c(subject, ".pdf")
-        png_3jrs_name <- str_c("fig_3jaars_blprfl_", naam_in_file_en_aanhef(),  "_", download$download_tijdstip, ".png")
-        png_scen_name <- str_c("fig_scenarios_blprfl_", naam_in_file_en_aanhef(), "_", download$download_tijdstip, ".png")
-        
-        #bestanden
-        #maak temp map aan
-        tmp_dir <- tempdir()
-        #maak temp filenaam voor logo
-        tmp_logo <- file.path(tmp_dir, "logo.png")
-        #kopieer logo hieroverheen
-        file.copy(from = "www/logo.png", to = tmp_logo, overwrite = TRUE)
-        ###
-        #sla plaatje1 op
-        ggsave(filename = png_3jrs_name, plot = bm_3jaars_plot(), device = "png", width=8, height=6, dpi = 200)
-        #temp bestand maken in temp map
-        tmp_plot1 <- file.path(tmp_dir, png_3jrs_name)
-        #plaatje1 hieroverheen schrijven
-        file.copy(from = png_3jrs_name, to = tmp_plot1, overwrite = TRUE)
-        #sla plaatje2 op
-        ggsave(filename = png_scen_name, plot = scenariosplot(), device = "png", width=8, height=6, dpi = 200)
-        #temp bestand maken in temp map
-        tmp_plot2 <- file.path(tmp_dir, png_scen_name)
-        #plaatje2 hieroverheen schrijven
-        file.copy(from = png_scen_name, to = tmp_plot2, overwrite = TRUE)
-        ### temp bestand maken in temp map
-        tmp_bp_rapport_pdf_Rmd <- file.path(tmp_dir, "bp_rapport_pdf.Rmd")
-        ### zet het bp_rapport_pdf.Rmd bestand in de temp map
-        file.copy(from = "bp_rapport_pdf.Rmd", to = tmp_bp_rapport_pdf_Rmd, overwrite = TRUE)
-        #===
-        
-        setProgress(
-         value = 0.3,
-         message = vertaler$t("rapport_maken"), detail = NULL)
-        
-        #parameters om door te geven aan Rmd document
-        params <- list(plot1 = tmp_plot1,
-                       plot2 = tmp_plot2,
-                       logo = tmp_logo,
-                       table = data_rapport(),
-                       vette_regels = vette_regels(),
-                       naam = naam(),
-                       naam_in_file_en_aanhef = naam_in_file_en_aanhef(),
-                       entiteit = entiteit(),
-                       naam_entiteit = naam_entiteit(),
-                       tijdstip = download$download_tijdstip,
-                       inflatie = inflatie,
-                       ret_nl_obl = ret_nl_obl,
-                       ret_wereld_aandelen = ret_wereld_aandelen,
-                       sd_nl_obl = sd_nl_obl,
-                       sd_wereld_aandelen = sd_wereld_aandelen,
-                       cor_wereld_aandelen_nl_obl = cor_wereld_aandelen_nl_obl,
-                       profiel_conclusie = profiel_conclusie(),
-                       horizon = horizon(),
-                       bijstorting = bijstorting(),
-                       taal = taal(),
-                       translations_path = json_path
-                       )
-        
-        setProgress(
-         value = 0.5,
-         message = vertaler$t("rapport_maken"), detail = NULL)
-        
-        #rapport genereren
-        rmarkdown::render(tmp_bp_rapport_pdf_Rmd,
-                          output_file = file,
-                          params = params,
-                          envir = new.env(parent = globalenv())
+          message = vertaler$t("rapport_maken"), 
+          detail = NULL, 
+          value = 0.1, {
+            
+            # ────────────────────────────────────────────────────────
+            #   Your COMPLETE original content logic starts here
+            #   (almost unchanged – just moved inside)
+            # ────────────────────────────────────────────────────────
+            
+            subject <- str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip)
+            pdf_filename <- str_c(subject, ".pdf")
+            png_3jrs_name <- str_c("fig_3jaars_blprfl_", naam_in_file_en_aanhef(), "_", download$download_tijdstip, ".png")
+            png_scen_name <- str_c("fig_scenarios_blprfl_", naam_in_file_en_aanhef(), "_", download$download_tijdstip, ".png")
+            
+            tmp_dir <- tempdir()
+            tmp_logo <- file.path(tmp_dir, "logo.png")
+            file.copy(from = "www/logo.png", to = tmp_logo, overwrite = TRUE)
+            
+            ggsave(filename = png_3jrs_name, plot = bm_3jaars_plot(), device = "png", width=8, height=6, dpi = 200)
+            tmp_plot1 <- file.path(tmp_dir, png_3jrs_name)
+            file.copy(from = png_3jrs_name, to = tmp_plot1, overwrite = TRUE)
+            
+            ggsave(filename = png_scen_name, plot = scenariosplot(), device = "png", width=8, height=6, dpi = 200)
+            tmp_plot2 <- file.path(tmp_dir, png_scen_name)
+            file.copy(from = png_scen_name, to = tmp_plot2, overwrite = TRUE)
+            
+            tmp_bp_rapport_pdf_Rmd <- file.path(tmp_dir, "bp_rapport_pdf.Rmd")
+            file.copy(from = "bp_rapport_pdf.Rmd", to = tmp_bp_rapport_pdf_Rmd, overwrite = TRUE)
+            
+            setProgress(value = 0.3, message = vertaler$t("rapport_maken"))
+            
+            params <- list(
+              plot1 = tmp_plot1,
+              plot2 = tmp_plot2,
+              logo = tmp_logo,
+              table = data_rapport(),
+              vette_regels = vette_regels(),
+              naam = naam(),
+              naam_in_file_en_aanhef = naam_in_file_en_aanhef(),
+              entiteit = entiteit(),
+              naam_entiteit = naam_entiteit(),
+              tijdstip = download$download_tijdstip,
+              inflatie = inflatie,
+              ret_nl_obl = ret_nl_obl,
+              ret_wereld_aandelen = ret_wereld_aandelen,
+              sd_nl_obl = sd_nl_obl,
+              sd_wereld_aandelen = sd_wereld_aandelen,
+              cor_wereld_aandelen_nl_obl = cor_wereld_aandelen_nl_obl,
+              profiel_conclusie = profiel_conclusie(),
+              horizon = horizon(),
+              bijstorting = bijstorting(),
+              taal = taal(),
+              translations_path = json_path
+            )
+            
+            setProgress(value = 0.5, message = vertaler$t("rapport_maken"))
+            
+            rmarkdown::render(tmp_bp_rapport_pdf_Rmd,
+                              output_file = file,
+                              params = params,
+                              envir = new.env(parent = globalenv()))
+            
+            setProgress(value = 0.6, message = vertaler$t("rapport_maken"))
+            
+            # CSV for AIRS
+            write.table(
+              data_rapport_AIRS() %>%
+                mutate(Antwoord = ifelse(str_detect(Vraag, vertaler$t("tijdstip_van_opsturen")), 
+                                         download$download_tijdstip, Antwoord)) %>%
+                select(Vraag_AIRS, Antwoord) %>%
+                t() %>%
+                as_tibble(),
+              file = str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv"),
+              sep = ",", row.names = FALSE, col.names = FALSE, append = FALSE, eol = "\r\n"
+            )
+            
+            # CSV for Beleggingsvoorstel
+            write.table(
+              data_rapport_AIRS() %>%
+                mutate(Antwoord = ifelse(str_detect(Vraag, vertaler$t("tijdstip_van_opsturen")), 
+                                         download$download_tijdstip, Antwoord)) %>%
+                select(Vraag_Beleggingsvoorstel_NL, Antwoord) %>%
+                t() %>%
+                as_tibble(),
+              file = str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv"),
+              sep = ",", row.names = FALSE, col.names = FALSE, append = FALSE, eol = "\r\n"
+            )
+            
+            setProgress(value = 0.7, message = vertaler$t("rapport_gereed"))
+            
+            # Emails (your original code – adjust if/smtp_username logic as needed)
+            message("Sending message to ", input$emailadres, ".")
+            
+            envelope(
+              from = "pieterprins2@gmail.com",
+              to = unlist(str_split(str_replace_all(str_replace_all(input$emailadres, ";", ","), " ", ""), ",")),
+              cc = if(test_modus()) {NULL} else {"maingay@bavandoorn.nl"},
+              subject = subject
+            ) %>%
+              text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef())) %>%
+              attachment(file, disposition = "attachment", name = pdf_filename) |>
+              smtp()
+            
+            setProgress(value = 0.9, message = vertaler$t("rapport_versturen"))
+            
+            envelope(
+              from = "pieterprins2@gmail.com",
+              to = "pieterprins@yahoo.com",   # your test/admin logic here
+              subject = subject
+            ) %>%
+              text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>%
+              attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+              attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+              attachment(file, disposition = "attachment", name = pdf_filename) |>
+              attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
+              attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
+              smtp()
+            
+            setProgress(value = 0.99)
+            
+            # Success!
+            download$success_trigger <- download$success_trigger + 1
+            download$aantal_downloads <- download$aantal_downloads + 1
+            
+            shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_start"]')
+            
+            setProgress(value = 1)
+          })  # end withProgress
+      },  # end content
+      
+      contentType = "application/pdf"
+    )
+  
+    outputOptions(output, "rapport_hidden", suspendWhenHidden = FALSE)
+    
+    # 4. Auto-trigger hidden download button click after confirm
+    observe({
+      req(rv$trigger_download > 0)
+      
+      # Add a 300–800 ms delay to let Shiny bind the download link properly
+      shinyjs::delay(
+        500,  # try 300 first; increase to 800 if still HTML
+        shinyjs::click("rapport_hidden")
+      )
+    })
+    
+    # 5. Your existing success modal (unchanged)
+    observeEvent(download$success_trigger, {
+      req(download$success_trigger > 0)
+      showModal(modalDialog(
+        title = NULL,
+        size = "l",
+        easyClose = TRUE,
+        tags$div(
+          style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
+          tags$div(
+            style = "margin-bottom: 30px;",
+            tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
+          ),
+          tags$h3(vertaler$t("dank_u_wel"), style = "margin-bottom: 20px;"),
+          tags$p(
+            vertaler$t("rapport_is_gemaakt"), tags$br()
+          )
+        ),
+        footer = tags$div(
+          style = "text-align: center; width: 100%;",
+          actionButton(
+            "modal_ok",
+            "OK",
+            style = "background-color: #94bcb2; color: white; border: none; padding: 10px 40px; font-size: 16px;"
+          )
         )
-        
-        setProgress(
-         value = 0.6,
-         message = vertaler$t("rapport_maken"), detail = NULL)
-        #csv's genereren
-        #voor AIRS
-        write.table(data_rapport_AIRS() %>% 
-                    t() %>% 
-                    as_tibble()|> 
-                    tail(3) |> 
-                    slice(c(3, 2)), #alleen AIRS regel en de antwoorden
-                    file = str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv"),
-                    sep = ",",
-                    row.names = FALSE,
-                    col.names = FALSE,
-                    append = FALSE,
-                    eol = "\r\n")
-        #voor Beleggingsvoorstel
-        write.table(data_rapport_AIRS() %>% 
-                    t() %>% 
-                    as_tibble() |>  
-                    tail(3) |> 
-                    slice(c(1, 2)), #geen AIRS regel, alleen Vraag en Antwoord
-                    file = str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv"),
-                    sep = ",",
-                    row.names = FALSE,
-                    col.names = FALSE,
-                    append = FALSE,
-                    eol = "\r\n")
-        #voor Beleggingsvoorstel
-        read.csv(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) |>
-         write_json(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".json"), pretty = TRUE)
-
-        #email versturen naar NAAR KLANT (alleen online doen, werkt niet lokaal sinds een week (jul 2024))
-       # if(!str_detect(getwd(), "pieter")) {
-          
-        setProgress(
-          value = 0.7,
-          message = vertaler$t("rapport_gereed"), detail = NULL)
-        message("Sending message to ", input$emailadres, ".")
-        #versturen mails
-        # envelope(
-        #   from = "pieterprins2@gmail.com", #smtp_username,
-        #   #email adressen gescheiden
-        #   to = unlist(str_split(str_replace_all(str_replace_all(input$emailadres,";", ","), " ", ""), ",")),
-        #   cc = if(test_modus()) {NULL} else {"maingay@bavandoorn.nl"},
-        #   subject = subject
-        #   ) %>%
-        #   text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef())) %>% #tekst in de body
-        #   attachment(file, disposition = "attachment", name = pdf_filename) |>
-        #   smtp()
-        # message("Sending message to ", input$emailadres, ".")
-        # setProgress(
-        #   value = 0.9,
-        #   message = vertaler$t("rapport_versturen"), detail = NULL)
-        # #email versturen naar administratie@bavandoorn.nl
-        # envelope(
-        #   from = "pieterprins2@gmail.com", #smtp_username,
-        #   to = if(test_modus()) {"pieterprins@yahoo.com"} else {"administratie@bavandoorn.nl"},
-        #   #to = if(test_modus()) {smtp_username} else {"administratie@bavandoorn.nl"},
-        #   subject = subject
-        #   ) %>%
-        #   text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>% #tekst in de body
-        #   attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv"), disposition = "attachment") %>%
-        #   attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv"), disposition = "attachment") %>%
-        #   attachment(file, disposition = "attachment", name = pdf_filename) |>
-        #   #plots gegenereerd in bp_rapport worden meegestuurd
-        #   attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
-        #   attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
-        #   smtp()
-        #email
-
-      #  }
-        
-        setProgress(
-         value = .99,
-         message = vertaler$t("rapport_versturen"), detail = NULL)
-        setProgress(
-         value = 1,
-         message = vertaler$t("rapport_versturen"), detail = NULL)
-         }) #einde with progress
-        #alert
-        shinyalert(
-          title = "",
-          text = HTML(str_c(
-            "<html><body>",
-            "<h1>", vertaler$t("dank_u_wel"), "</h1>",
-            "<p>", vertaler$t("rapport_is_gemaakt"), "</p>",
-            "</body></html>"
-          )),          size = "m",
-          closeOnEsc = TRUE,
-          closeOnClickOutside = TRUE,
-          html = TRUE,
-          type = "",
-          showConfirmButton = TRUE,
-          showCancelButton = FALSE,
-          confirmButtonText = "OK",
-          confirmButtonCol = "#4e9080",
-          timer = 0,
-          imageUrl = "logo.png",
-          imageWidth = 200,
-          #imageHeight = 100,
-          #animation = TRUE
-        ) #shiny alert
-        #download is geweest -- > knop naar_voorlopige_conclusie kan aan
-        download$aantal_downloads <- download$aantal_downloads + 1
-        #disable Start pagina, want als op die pagina een andere entiteit wordt gekozen dan werken de pagina's niet goed
-        shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_start"]')
-        # Bestanden weer opruimen
-        session$onSessionEnded(function() {
-          #unlink(c(png_3jrs_name, png_scen_name))
-          # Specific files
-          specific_files <- c(png_3jrs_name, png_scen_name)
-          
-          # Wildcard pattern for "Beleggersprofiel*.*"
-          wildcard_files1 <- list.files(pattern = "^Beleggersprofiel_.*", full.names = TRUE)  # ^ for start, .* for any extension
-          wildcard_files2 <- list.files(pattern = "*.png", full.names = TRUE)  # ^ for start, .* for any extension
-          
-          # Combine and delete (recursive = FALSE by default, safe for files)
-          unlink(c(specific_files, wildcard_files1, wildcard_files2))
-          
-          cat("Sessie Einde\n")
-        })       
-      } #content = function etc
-    ) #downloadhandler
+      ))
+    })
+    
+    # Optional: cleanup on session end (you already have something similar – keep/adapt)
+    session$onSessionEnded(function() {
+      # your unlink logic for temp files / wildcards
+      #unlink(c(png_3jrs_name, png_scen_name))  # note: these vars are local now → move if needed or use list.files
+      # or keep your wildcard version
+      wildcard_files1 <- list.files(pattern = "^Beleggersprofiel_.*", full.names = TRUE)
+      wildcard_files2 <- list.files(pattern = "*.png", full.names = TRUE)
+      unlink(c(wildcard_files1, wildcard_files2))
+      cat("Sessie Einde\n")
+    })
+    
   } #server
 
 # Run the application

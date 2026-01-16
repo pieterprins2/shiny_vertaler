@@ -1,0 +1,55 @@
+kolomnaam_AIRS,kolomnaam_Beleggingsvoorstel_NL
+AIRS ID,AIRS ID
+Uw naam,Uw naam
+e-mailadres,e-mail adres
+Ingevuld voor,Dit beleggersprofiel is ingevuld voor
+Naam entiteit,Naam van de vereniging
+Beleggingsstatuut,Beleggingsstatuut
+Pensioenbrief,leeg
+Tijdstip van opsturen,Tijdstip van opsturen
+I - Beleggingsdoelstelling,I - Beleggingsdoelstelling
+Intake_I_1,1 - Het vermogen van de vereniging wordt belegd
+Intake_I_2,2 - Wilt u een toelichting geven op de beleggingsdoelstelling van de vereniging (bijvoorbeeld aan de hand van een beleggingsstatuut)?
+Toelichting beleggingsdoelstelling,   Toelichting beleggingsdoelstelling
+Intake_I_beleggingsdoelstelling,Profiel o.b.v. beleggingsdoelstelling
+II - Financiele situatie,II - Financiele situatie
+Intake_II_1,"1 - Eigen vermogen is de waarde van de bezittingen minus de schulden, zoals een lening. Het eigen vermogen van de vereniging"
+Intake_II_2,2 - Het eigen vermogen kan vrij belegbaar zijn en/of belegd zijn in vastgoed of andere minder makkelijk verhandelbare vermogensbestanddelen. Het vrije vermogen van de vereniging
+Intake_II_3,3 - Het deel van het vrij belegbare vermogen van de vereniging dat bij B.A. van Doorn in beheer komt
+Intake_II_4,"4 - Het inkomen van de vereniging (zoals uit contributies, schenkingen of subsidies)"
+Intake_II_5,"5 - Louter financieel gezien, zonder aanpassingen te hoeven doen aan het jaarlijks te besteden budget"
+Intake_II_6,6 - Het huidige vrij belegbare vermogen van de vereniging
+Intake_II_financiele situatie,Profiel o.b.v. financiele situatie
+III - Kennis en ervaring,III - Kennis en ervaring
+Intake_III_1,1 - Mijn kennis van beleggen
+Intake_III_2,2 - Mijn kennis van beleggingsinstrumenten
+Intake_III_3,3 - Met beleggingsdienstverlening
+Intake_III_4,4 - Mijn ervaring met beleggen
+Intake_III_Kennis en ervaring,Profiel o.b.v. kennis en ervaring
+IV - Risicobereidheid,IV - Risicobereidheid
+Intake_IV_1,1 - Als het gaat om slechte beleggingsresultaten van de vereniging
+Intake_IV_2,2 - De waarde van de beleggingen van de vereniging zal fluctueren.
+Intake_IV_3,3 - Wat betreft de beleggingshorizon is het volgende van toepassing:
+Intake_IV_4,4 - Als de beleggingsdoelstelling van de vereniging niet gehaald wordt
+Intake_IV_Risicobereidheid,Profiel o.b.v. risicobereidheid
+V - Te beleggen vermogen en eventuele bijstortingen of onttrekkingen,V - Te beleggen vermogen en eventuele bijstortingen of onttrekkingen
+Intake_V_1,1 - Te beleggen vermogen
+Intake_V_2,2 - Jaarlijkse bijstorting of onttrekking
+Intake_V_3,VI - Keuzes aan de hand van de grafieken
+Intake_VI_1,1 - Eerste keuze visueel
+Intake_VI_2,2 - Tweede keuze visueel
+Voor, 
+Intake_VI_3,"Voorlopige conclusie o.b.v. uw beleggingsdoelstelling, financiele situatie, risicobereidheid en visuele keuzes samen"
+Achter, 
+VII - Duurzaamheid,VII - Duurzaamheid
+Intake_VII_1,1 - In de samenstelling van de huidige beleggingsportefeuille van de vereniging
+Intake_VII_2,2 - Bij de samenstelling van de portefeuille bij B.A. van Doorn
+Intake_VII_3,3 - Wat betreft het gedeelte duurzame beleggingen in de portefeuille van de vereniging
+Intake_VII_4,4 - Zogenaamde Europese Taxonomie-beleggingen
+Voor2, 
+VIII - Overig,VIII - Overig
+Intake VIII_1,1 - Wilt u een toelichting geven op overige zaken die niet aan de orde zijn gekomen?
+Toelichting Overig,   Toelichting eventuele overige zaken
+Voor3, 
+Private beleggingen,Private beleggingen
+Intake PB_1,1 - Gegeven de genoemde mogelijke voor- en nadelen van private beleggingen
