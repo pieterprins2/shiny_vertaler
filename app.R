@@ -100,30 +100,46 @@ library(shinyalert)
 # 
 #==mail variabelen, komt uit .Renviron, varieert per user
 
+  smtp_server <- "smtp.gmail.com" #Sys.getenv("SMTP_SERVER")
+  smtp_port <- "587" #Sys.getenv("SMTP_PORT")
+  smtp_username <- "pieterprins2@gmail.com" #Sys.getenv("SMTP_USERNAME")
+  IP <- content(GET("https://api.ipify.org?format=json"))$ip
+  
+  SMTP_PASSWORD="tnjjwjpocvslhfur"
+  
+  smtp <- emayili::server(
+    host = smtp_server,
+    port = smtp_port,
+    username = smtp_username,
+    password = Sys.getenv("SMTP_PASSWORD"),
+    max_times = 1
+  )
+
 smtp_server <- "smtp.gmail.com" #Sys.getenv("SMTP_SERVER")
 smtp_port <- "587" #Sys.getenv("SMTP_PORT")
 smtp_username <- "pieterprins2@gmail.com" #Sys.getenv("SMTP_USERNAME")
 IP <- content(GET("https://api.ipify.org?format=json"))$ip
 
-#SMTP_PASSWORD= "ohfs vttt hbty ypts"
 
-#oude SMTP_PASSWORD="tnjjwjpocvslhfur"
-
-smtp <- emayili::server(
-  host = "smtp.gmail.com",
-  port = 587,                # TLS (STARTTLS) – most reliable for Gmail
-  username = Sys.getenv("SMTP_USERNAME"),
-  password = Sys.getenv("SMTP_PASSWORD"),
-  # Optional but recommended for Gmail:
-  use_ssl = FALSE,           # Use STARTTLS instead of implicit SSL
-  insecure = FALSE
-  # 
-  # host = smtp_server,
-  # port = smtp_port,
-  # username = smtp_username,
-  # password = Sys.getenv("SMTP_PASSWORD"),
-  # max_times = 1
-)
+# SMTP_PASSWORD="tnjjwjpocvslhfur"
+# 
+# smtp <- emayili::server(
+#   smtp(smtp),
+#   host = "smtp.gmail.com",
+#   port = 587,                # TLS (STARTTLS) – most reliable for Gmail
+#   username = Sys.getenv("SMTP_USERNAME"),
+#   password = Sys.getenv("SMTP_PASSWORD"),
+#   secure   = "starttls",
+#   # Optional but recommended for Gmail:
+#   use_ssl = FALSE,           # Use STARTTLS instead of implicit SSL
+#   insecure = FALSE
+#   # 
+#   # host = smtp_server,
+#   # port = smtp_port,
+#   # username = smtp_username,
+#   # password = Sys.getenv("SMTP_PASSWORD"),
+#   # max_times = 1
+# )
 
 #colors
 ba_color <- "#4E9080"
@@ -520,7 +536,7 @@ ui <-
               div(style="display: inline-block; width: 305px ;", actionButton(inputId = "start_rapport", 
                                                                               label = vertaler$t("rapport_maken_en_versturen"),   # or whatever your label is
                                                                               icon = icon("file-pdf"), 
-                                                                              class = "btn-primary btn")),
+                                                                              class = "button")),
               downloadButton(outputId = "rapport_hidden", "Hidden Download", style = "display: none;"),
               #volgende button verschijnt pas na download, wordt in de server gemaakt
               div(style="display: inline-block; width: 65px ;", uiOutput('ui_naar_voorlopige_conclusie'))
@@ -2346,36 +2362,41 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   rv <- reactiveValues(trigger_download = 0)   # NEW: to trigger real download after confirm
   
   observeEvent(input$start_rapport, {
-    
-    # ──────────────────────────────
-    #   Very loud debug messages
-    # ──────────────────────────────
-  
     showModal(modalDialog(
+      title = NULL,
+      size = "l",
+      easyClose = TRUE,
+      
+      tags$div(
+        style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
+        # Logo bovenaan
+        tags$div(
+          style = "margin-bottom: 30px;",
+          tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
+       ),
         title = "Titel",#vertaler$t("bevestig_genereer_rapport"),   # e.g. "Bevestig rapport genereren"
         size = "m",
-        easyClose = FALSE,
+        easyClose = FALSE
+      ),
         footer = tagList(
-          modalButton("annularen"),#vertaler$t("annuleren")),
-          actionButton("confirm_rapport",
-                       label = "label", #vertaler$t("ok_start_download"),
-                       class = "btn-primary",
+          modalButton("annuleren"),#vertaler$t("annuleren")),
+          actionButton("bevestig_rapport_maken",
+                       label = "start rapport", #vertaler$t("ok_start_download"),
+                       class = "button",
                        icon = icon("check"))
         ),
         tags$div(
           style = "text-align: center; padding: 20px;",
-          #tags$h4(vertaler$t("rapport_wordt_gemaakt_na_bevestiging")),
+          tags$h4(vertaler$t("rapport_maken_en_versturen")),
           #tags$p(vertaler$t("na_ok_start_download")),   # customize these translations
           tags$p(style = "color: #666; font-size: 0.95em;",
-                 "Dit kan enkele seconden duren vanwege PDF-generatie en e-mail verzending.")
+                 vertaler$t("het_maken_en_versturen_kan_even_duren"))
         )
       ))
   })
   
   
-
-  
-  observeEvent(input$confirm_rapport, {
+  observeEvent(input$bevestig_rapport_maken, {
     removeModal()
     rv$trigger_download <- rv$trigger_download + 1
   })
@@ -2500,31 +2521,31 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
             # Emails (your original code – adjust if/smtp_username logic as needed)
             message("Sending message to ", input$emailadres, ".")
             
-            envelope(
-              from = "pieterprins2@gmail.com",
-              to = unlist(str_split(str_replace_all(str_replace_all(input$emailadres, ";", ","), " ", ""), ",")),
-              cc = if(test_modus()) {NULL} else {"maingay@bavandoorn.nl"},
-              subject = subject
-            ) %>%
-              text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef())) %>%
-              attachment(file, disposition = "attachment", name = pdf_filename) |>
-              smtp()
-            
-            setProgress(value = 0.9, message = vertaler$t("rapport_versturen"))
-            
-            envelope(
-              from = "pieterprins2@gmail.com",
-              to = "pieterprins@yahoo.com",   # your test/admin logic here
-              subject = subject
-            ) %>%
-              text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>%
-              attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
-              attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
-              attachment(file, disposition = "attachment", name = pdf_filename) |>
-              attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
-              attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
-              smtp()
-            
+            # envelope(
+            #   from = "pieterprins2@gmail.com",
+            #   to = unlist(str_split(str_replace_all(str_replace_all(input$emailadres, ";", ","), " ", ""), ",")),
+            #   cc = if(test_modus()) {NULL} else {"maingay@bavandoorn.nl"},
+            #   subject = subject
+            # ) %>%
+            #   text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef())) %>%
+            #   attachment(file, disposition = "attachment", name = pdf_filename) |>
+            #   smtp()
+            # 
+            # setProgress(value = 0.9, message = vertaler$t("rapport_versturen"))
+            # 
+            # envelope(
+            #   from = "pieterprins2@gmail.com",
+            #   to = "pieterprins@yahoo.com",   # your test/admin logic here
+            #   subject = subject
+            # ) %>%
+            #   text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>%
+            #   attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+            #   attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+            #   attachment(file, disposition = "attachment", name = pdf_filename) |>
+            #   attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
+            #   attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
+            #   smtp()
+            # 
             setProgress(value = 0.99)
             
             # Success!
