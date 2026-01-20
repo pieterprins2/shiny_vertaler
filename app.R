@@ -75,10 +75,10 @@ IP <- content(GET("https://api.ipify.org?format=json"))$ip
   
 #==mail variabelen, komt uit .Renviron, varieert per user
 smtp_pp <- emayili::server(
-  host = Sys.getenv("SMTP_SERVER_PP"),
-  port = Sys.getenv("SMTP_PORT_PP"),
-  username = Sys.getenv("SMTP_USERNAME_PP"),
-  password = Sys.getenv("SMTP_PASSWORD_PP"),
+  host = "smtp.gmail.com",
+  port = "587",
+  username = "pieterprins2@gmail.com",
+  password = "ohfsvttthbtyypts",
   max_times = 1
 )
 
@@ -91,7 +91,7 @@ smtp_ba <- emayili::server(
   password = Sys.getenv("SMTP_PASSWORD_BA"),
   max_times = 1
 )
-smtp_username_ba <- Sys.getenv("SMTP_USERNAME_BA")
+smtp_username_ba <- "pieterprins2@gmail.com"
 
 
 #colors
@@ -2282,7 +2282,8 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
 
             #versturen beleggersprofiel pdf rapport naar client
             envelope(
-              from = if(test_modus()) {smtp_username_pp} else {smtp_username_ba},
+              #from = if(test_modus()) {smtp_username_pp} else {smtp_username_ba},
+              from = smtp_username_ba,
               to = if(test_modus()) {"pieterprins@yahoo.com"} else {"administratie@bavandoorn.nl"},
               subject = subject
               ) %>%
