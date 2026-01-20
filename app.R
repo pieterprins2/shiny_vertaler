@@ -72,7 +72,8 @@ if(str_detect(getwd(), "pieter")) {rsconnect::writeManifest()}
 #test_modus <- naam = testen
 
 IP <- content(GET("https://api.ipify.org?format=json"))$ip
-  
+
+
 #==mail variabelen, komt uit .Renviron, varieert per user
 smtp_pp <- emayili::server(
   host = "smtp.gmail.com",
@@ -91,7 +92,7 @@ smtp_ba <- emayili::server(
   password = Sys.getenv("SMTP_PASSWORD_BA"),
   max_times = 1
 )
-smtp_username_ba <- "pieterprins2@gmail.com"
+smtp_username_ba <- Sys.getenv("SMTP_USERNAME_BA")
 
 
 #colors
@@ -2282,8 +2283,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
 
             #versturen beleggersprofiel pdf rapport naar client
             envelope(
-              #from = if(test_modus()) {smtp_username_pp} else {smtp_username_ba},
-              from = smtp_username_ba,
+              from = if(test_modus()) {smtp_username_pp} else {smtp_username_ba},
               to = if(test_modus()) {"pieterprins@yahoo.com"} else {"administratie@bavandoorn.nl"},
               subject = subject
               ) %>%
@@ -2293,7 +2293,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                 attachment(file, disposition = "attachment", name = pdf_filename) |>
                 attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
                 attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
-              smtp_ba()
+              verzenden()
 
             setProgress(value = 0.99)
             
