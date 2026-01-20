@@ -22,11 +22,15 @@ library(gt)
 library(jsonlite)
 library(htmltools)
 library(shiny.i18n)
+library(rsconnect)
 
 #==mail
 library(emayili) #email
 #library(polished) #email validate evt
 library(shinyalert)
+
+#hier lokaal writemanifest doen, voor posit connect
+if(str_detect(getwd(), "pieter")) {rsconnect::writeManifest()}
 
   #opzet vertaling vanuit spreadsheet
   df <- read_excel("translations/translations.xlsx", sheet = "Sheet1")
@@ -65,81 +69,30 @@ library(shinyalert)
 # deze gegevens staan in het bestand .Renviron en worden hieronder ingelezen
 # de .Renviron file staat in de root van de project folder
 
-#test_modus <- naam = test_
-#publish <- TRUE #publish naar shinyapps.io afhankelijk van te kiezen target .Renviron file
+#test_modus <- naam = testen
 
-#publish_target <- "PP" #of "BAVD"
-#shiny_path <- "/Users/pieter/Library/CloudStorage/OneDrive-Personal/R Projects/Beleggersprofiel/shiny/"
-# 
-# if(publish_target == "PP") {
-#   file.copy(from = str_c(shiny_path,".Renviron_PP"), 
-#             to = str_c(shiny_path,".Renviron"))
-# } else if(publish_target == "BAVD") {
-#   file.copy(from = str_c(shiny_path,".Renviron_BAVD"), 
-#             to = str_c(shiny_path,".Renviron"))
-# }
-
-
-#==rsconnect variabelen, komt uit .Renviron, varieert per user
-# if(publish) {
-# #   library(rsconnect)
-#    rsconnect::setAccountInfo(name=Sys.getenv("name"),
-#                              token=Sys.getenv("token"),
-#                              secret=Sys.getenv("secret"))
-# # }
-#    
-   # rsconnect::setAccountInfo(name='pieter-prins',
-   #                           token='9C216407260A270B90EFC3A79BED6A6C',
-   #                           secret='tn8l5OvwBC/Rg4E/BrCS0fXGNv/Jr6ruDXBPwtxp')
-   # 
-
-# rsconnect::setAccountInfo(name='bavd',
-#                           token='12B340AB28AC93D5F375A07AB5E240F6',
-#                           secret='UiNW78d/WNwvKmKReBi8o4vWYJ1AeYIhqVEjxFro')
-
-# 
-#==mail variabelen, komt uit .Renviron, varieert per user
-
-  smtp_server <- "smtp.gmail.com" #Sys.getenv("SMTP_SERVER")
-  smtp_port <- "587" #Sys.getenv("SMTP_PORT")
-  smtp_username <- "pieterprins2@gmail.com" #Sys.getenv("SMTP_USERNAME")
-  IP <- content(GET("https://api.ipify.org?format=json"))$ip
-  
-  SMTP_PASSWORD="tnjjwjpocvslhfur"
-  
-  smtp <- emayili::server(
-    host = smtp_server,
-    port = smtp_port,
-    username = smtp_username,
-    password = Sys.getenv("SMTP_PASSWORD"),
-    max_times = 1
-  )
-
-smtp_server <- "smtp.gmail.com" #Sys.getenv("SMTP_SERVER")
-smtp_port <- "587" #Sys.getenv("SMTP_PORT")
-smtp_username <- "pieterprins2@gmail.com" #Sys.getenv("SMTP_USERNAME")
 IP <- content(GET("https://api.ipify.org?format=json"))$ip
+  
+#==mail variabelen, komt uit .Renviron, varieert per user
+smtp_pp <- emayili::server(
+  host = Sys.getenv("SMTP_SERVER_PP"),
+  port = Sys.getenv("SMTP_PORT_PP"),
+  username = Sys.getenv("SMTP_USERNAME_PP"),
+  password = Sys.getenv("SMTP_PASSWORD_PP"),
+  max_times = 1
+)
 
+smtp_username_pp <- Sys.getenv("SMTP_USERNAME_PP")
 
-# SMTP_PASSWORD="tnjjwjpocvslhfur"
-# 
-# smtp <- emayili::server(
-#   smtp(smtp),
-#   host = "smtp.gmail.com",
-#   port = 587,                # TLS (STARTTLS) – most reliable for Gmail
-#   username = Sys.getenv("SMTP_USERNAME"),
-#   password = Sys.getenv("SMTP_PASSWORD"),
-#   secure   = "starttls",
-#   # Optional but recommended for Gmail:
-#   use_ssl = FALSE,           # Use STARTTLS instead of implicit SSL
-#   insecure = FALSE
-#   # 
-#   # host = smtp_server,
-#   # port = smtp_port,
-#   # username = smtp_username,
-#   # password = Sys.getenv("SMTP_PASSWORD"),
-#   # max_times = 1
-# )
+smtp_ba <- emayili::server(
+  host = Sys.getenv("SMTP_SERVER_BA"),
+  port = Sys.getenv("SMTP_PORT_BA"),
+  username = Sys.getenv("SMTP_USERNAME_BA"),
+  password = Sys.getenv("SMTP_PASSWORD_BA"),
+  max_times = 1
+)
+smtp_username_ba <- Sys.getenv("SMTP_USERNAME_BA")
+
 
 #colors
 ba_color <- "#4E9080"
@@ -149,10 +102,10 @@ euroblue <- "#004494"
 euroyellow <- "#ffd617"
 usred <- "#bf0a30"
 
-titel <- "Beleggersprofiel"
-
+#twee modules inladen
 source("scenariosplot_module.R")
 source("barplot_module.R")
+
 
 #==bestanden inlezen
 df_bijstortingen_onttrekkingen_params_compleet_met_gem <-
@@ -180,22 +133,6 @@ profiel_levels <- c("RM100", "RD30RM70", "RD50RM50", "RD70RM30", "RD100")
 #horizon_levels <- c("3 jaar", "5 jaar", "10 jaar", "20 jaar", "30 jaar")
 profiel_levels_AIRS <- c("100 RM", "30 RD - 70 RM", "50 RD - 50 RM", "70 RD - 30 RM", "100 RD")
 
-
-#bedragen formaat verschilt per taal
-# current_lang <- vertaler$get_translation_language()
-# big_mark <- if (current_lang == "nl") "." else ","  
-# decimal_mark <- if (current_lang == "nl") "," else "."
-# 
-# #duplicaat code voorkomen 2 - schijnprecisie eruit
-# format_bedrag_tabellen <- function(bedrag, big_mark, decimal_mark) {
-#   paste0(" €", formatC(as.numeric(round(bedrag/1000, 0) * 1000),
-#                        format="f", digits=0, big.mark=big_mark, decimal.mark = decimal_mark))
-# }
-# #voor bijstorting tot 100 euro nauwkeurig
-# format_bedrag_tabellen_bijstorting <- function(bedrag, big_mark, decimal_mark) {
-#   paste0(" €", formatC(as.numeric(round(bedrag/100, 0) * 100),
-#                        format="f", digits=0, big.mark=big_mark, decimal.mark = decimal_mark))
-# }
 
 #datum nl
 #functie om de nl datum in de tekst te zetten
@@ -269,34 +206,6 @@ vragen_antwoorden_database <- function(entiteit = "prive", taal = "nl") {
       mutate(nummer = as.numeric(factor(vraag, levels = factor_vragen)))
 }
 
-# vragen_antwoorden_prive <- vragen_antwoorden_database(entiteit = "prive")
-# vragen_antwoorden_enof <- vragen_antwoorden_database(entiteit = "enof")
-# vragen_antwoorden_bv <- vragen_antwoorden_database(entiteit = "bv")
-# vragen_antwoorden_ve <- vragen_antwoorden_database(entiteit = "ve")
-#stichting en organisatie (overig) zijn alleen zoeken-vervangen van vereniging
-# vragen_antwoorden_st <- vragen_antwoorden_ve |> 
-#   mutate_at(vars(c(vraag, antwoord, selected)), ~ str_replace(., "vereniging", "stichting"))
-# vragen_antwoorden_ov <- vragen_antwoorden_ve |> 
-#   mutate_at(vars(c(vraag, antwoord, selected)), ~ str_replace(., "vereniging", "organisatie"))
-#===
-
-# #vragen formulier
-#1 selectizeInput01 --> verhuisd naar server, renderUI
-#2 bedragen input, duplicaat code voorkomen
-# bedragenInput <- function(inputId, label, value) {
-#   shinyWidgets::autonumericInput(
-#     inputId = inputId,
-#     label = label,
-#     value = value,
-#     currencySymbolPlacement = "p",
-#     currencySymbol = "€",
-#     decimalPlaces = 0,
-#     minimumValue = 0,
-#     digitGroupSeparator = big_mark,
-#     decimalCharacter = decimal_mark,
-#     align = "left",
-#     width = 800)
-# }
 
 # UI
 ui <- 
@@ -353,32 +262,32 @@ ui <-
     selected = NULL,
     id = "tabset",
          tabPanel(title = uiOutput("ui_tabset_taal_titel"), value = "panel_taal", id = "panel_taal",
-         h4(uiOutput("ui_vul_taal_in")),
-         actionButton(class = "button", 'jumpToP_start', vertaler$t("volgende_pagina"))
-         ),
+           h4(uiOutput("ui_vul_taal_in")),
+           actionButton(class = "button", 'jumpToP_start', vertaler$t("volgende_pagina"))
+          ),
          tabPanel(title = "Start", value = "panel_start", id = "panel_start",
-         h3(uiOutput("ui_intro_head")),
-         h4(uiOutput("ui_intro_text")),
-         br(),
-         h4(uiOutput("ui_vul_naam_in")),
-         #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
-         tagQuery(textInput("naam", 
-                            value = "testen",
-                            placeholder = "...",
-                            label = vertaler$t("uw_naam"), 
-                            width = '500px'))$find("input")$addAttrs(autocomplete = "off")$allTags(),
-         #h4("Nadat dit beleggersprofiel is ingevuld worden de resultaten ervan verwerkt in een rapport. Dit rapport wordt via e-mail naar u toegestuurd."),
-         h4(uiOutput("ui_u_krijgt_rapport_text")),
-         uiOutput("ui_vraag_emailadres"),
-         br(),
-         h4(uiOutput("ui_intro_vraag_entiteit")),
-         #h4("Sommige vragen, of de formulering ervan, hangen af van het soort entiteit dat u vertegenwoordigt."),
-         uiOutput("ui_vraag_entiteit"),
-         uiOutput("ui_vraag_naam_entiteit"),
-         uiOutput("ui_vraag_beleggingsstatuut"),
-         textOutput('error_msg_start'),
-         actionButton(class = "back_button", 'jump_back_ToP_taal', vertaler$t("vorige_pagina")),
-         actionButton(class = "button", 'jumpToP_beleggingsdoelstelling', vertaler$t("volgende_pagina")),
+           h3(uiOutput("ui_intro_head")),
+           h4(uiOutput("ui_intro_text")),
+           br(),
+           h4(uiOutput("ui_vul_naam_in")),
+           #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
+           tagQuery(textInput("naam", 
+                              value = "testen",
+                              placeholder = "...",
+                              label = vertaler$t("uw_naam"), 
+                              width = '500px'))$find("input")$addAttrs(autocomplete = "off")$allTags(),
+           #h4("Nadat dit beleggersprofiel is ingevuld worden de resultaten ervan verwerkt in een rapport. Dit rapport wordt via e-mail naar u toegestuurd."),
+           h4(uiOutput("ui_u_krijgt_rapport_text")),
+           uiOutput("ui_vraag_emailadres"),
+           br(),
+           h4(uiOutput("ui_intro_vraag_entiteit")),
+           #h4("Sommige vragen, of de formulering ervan, hangen af van het soort entiteit dat u vertegenwoordigt."),
+           uiOutput("ui_vraag_entiteit"),
+           uiOutput("ui_vraag_naam_entiteit"),
+           uiOutput("ui_vraag_beleggingsstatuut"),
+           textOutput('error_msg_start'),
+           #actionButton(class = "back_button", 'jump_back_ToP_taal', vertaler$t("vorige_pagina")),
+           actionButton(class = "button", 'jumpToP_beleggingsdoelstelling', vertaler$t("volgende_pagina")),
         ),
         tabPanel(title = "I", value = "panel_beleggingsdoelstelling",
            #h3(str_c("I. ", vertaler$t("beleggingsdoelstelling"))),
@@ -512,29 +421,15 @@ ui <-
         tabPanel(title = vertaler$t("rapport"), value = "panel_rapport",
             h3(vertaler$t("belangrijke_informatie")),
             p(style = "text-align: justify;", vertaler$t("disclaimer")),
-            # oude disclaimer met variabelen
-            # str_c(
-            # "De scenario's zijn gebaseerd op ervaringscijfers.
-            # Voor de verwachte opbrengst van Nederlandse staatsobligaties is een waarde gebruikt van ", round(100*ret_nl_obl, 2),
-            # "%, voor wereldwijde aandelen ", round(100*ret_wereld_aandelen, 1), "%, met een risico van respectievelijk ",
-            # round(100*sd_nl_obl, 0), "% en ", round(100*sd_wereld_aandelen, 0), "% en een licht negatieve onderlinge correlatie van ",
-            # round(cor_wereld_aandelen_nl_obl, 1), ". Gepoogd is weer te geven wat op die basis realistische scenario's kunnen zijn.
-            # De Europese Centrale Bank streeft een inflatie na van ", round(100*inflatie, 0), "%.
-            # De getoonde bedragen zijn nominaal en daarbij is dus geen rekening gehouden met inflatie.
-            # Cijfers moeten worden geïnterpreteerd als schattingen.
-            # Ze vormen geen garantie voor de toekomst.
-            # De toekomst kan beter of slechter uitpakken dan de uitersten in de simulatie.
-            # Er is geen rekening gehouden met kosten.")),
             br(),
             uiOutput("ui_cond_panel_vraag_opsturen_beleggingsstatuut"),
             h3(vertaler$t("rapport_maken_en_versturen")),
             p(style = "text-align: justify;", vertaler$t("als_u_op_onderstaande_knop_klikt")),
-          
             #onderstaand is om de buttons op een lijn te houden
             div(
               div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_overig', vertaler$t("vorige_pagina"))),
               div(style="display: inline-block; width: 305px ;", actionButton(inputId = "start_rapport", 
-                                                                              label = vertaler$t("rapport_maken_en_versturen"),   # or whatever your label is
+                                                                              label = "------------ OK ------------", #vertaler$t("rapport_maken_en_versturen"),   # or whatever your label is
                                                                               icon = icon("file-pdf"), 
                                                                               class = "button")),
               downloadButton(outputId = "rapport_hidden", "Hidden Download", style = "display: none;"),
@@ -594,11 +489,8 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$taal, {
-    # This print is just for demonstration
-    print(paste("Language change!", input$taal))
-    # Here is where we update language in session
+    print(paste("verandering taal:", input$taal))
     shiny.i18n::update_lang(input$taal)
-    #shiny.i18n::update_lang(session, input$taal)
   })
   
   big_mark <- reactive({
@@ -608,22 +500,6 @@ server <- function(input, output, session) {
   decimal_mark <- reactive({
     if (taal() == "nl") "," else "."
   })
-  
-  #bedragen formaat verschilt per taal
-  # current_lang <- vertaler$get_translation_language()
-  # big_mark <- if (current_lang == "nl") "." else ","  
-  # decimal_mark <- if (current_lang == "nl") "," else "."
-  
-  #duplicaat code voorkomen 2 - schijnprecisie eruit
-  # format_bedrag_tabellen <- function(bedrag) {
-  #   paste0(" €", formatC(as.numeric(round(bedrag/1000, 0) * 1000),
-  #                        format="f", digits=0, big.mark=big_mark(), decimal.mark = decimal_mark()))
-  # }
-  # #voor bijstorting tot 100 euro nauwkeurig
-  # format_bedrag_tabellen_bijstorting <- function(bedrag) {
-  #   paste0(" €", formatC(as.numeric(round(bedrag/100, 0) * 100),
-  #                        format="f", digits=0, big.mark=big_mark(), decimal.mark = decimal_mark()))
-  # }
   
   bedragenInput <- function(inputId, label, value) {
     shinyWidgets::autonumericInput(
@@ -1157,7 +1033,13 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
 
   #=== vanaf einde weer naar begin springen
   observeEvent(input$jumpToP_start, {
-    #drie tabs met de resultaten weer disablen, private beleggingen idem
+    shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_start"]')
+    updateTabsetPanel(session, inputId = "tabset",
+                      selected = "panel_start")
+  })
+  
+  observeEvent(input$jumpToP_taal, {
+      #drie tabs met de resultaten weer disablen, private beleggingen idem
     shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_private_beleggingen"]')
     shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_voorlopige_conclusie"]')
     shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_tabel"]')
@@ -1167,7 +1049,8 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     removeTab(inputId = "tabset", target = "panel_voorlopige_conclusie", session = getDefaultReactiveDomain())
     removeTab(inputId = "tabset", target = "panel_tabel", session = getDefaultReactiveDomain())
     removeTab(inputId = "tabset", target = "panel_projecties", session = getDefaultReactiveDomain())
-    updateTabsetPanel(session, inputId = "tabset", selected = "panel_start")
+  #  updateTabsetPanel(session, inputId = "tabset", selected = "panel_start")
+    updateTabsetPanel(session, inputId = "tabset", selected = "panel_taal")
     alle_panels_uitschakelen()
     #tellertjes weer op nul
     download$aantal_downloads <- 0
@@ -1341,29 +1224,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_duurzaamheid"]')
         updateTabsetPanel(session, inputId = "tabset", selected = "panel_duurzaamheid")
   })
-  # observeEvent(input$jumpToP_private_beleggingen, {
-  #   output$error_msg_duurzaamheid <- renderText({
-  #     if(meer_vragen_duurzaamheid()) {
-  #       validate_need_functie("duurzaamheid") #alle vier vragen
-  #     } else { #slechts twee vragen
-  #       shiny::validate(
-  #         shiny::need(!opties_vraag(vraagnummers_categorie("duurzaamheid")[1])[1] %in%
-  #                       c(eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[1])))),
-  #                         eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[2]))))),
-  #                     'Maak een keuze bij alle bovenstaande vragen
-  #                   '))
-  #     }
-  #   })
-  #   if(meer_vragen_duurzaamheid()) {
-  #     req_functie("duurzaamheid") #alle vier vragen
-  #   } else { #slechts twee vragen
-  #     shiny::req(!opties_vraag(vraagnummers_categorie("duurzaamheid")[1])[1] %in%
-  #                  c(eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[1])))),
-  #                    eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[2]))))))
-  #   }
-  #   shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_private_beleggingen"]')
-  #   updateTabsetPanel(session, inputId = "tabset", selected = "panel_private_beleggingen")
-  # })
+
   #===
   
   private_beleggingen_tab_geopend <- reactiveValues()
@@ -1438,68 +1299,6 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     updateTabsetPanel(session, inputId = "tabset", selected = "panel_rapport")
   })
   
-  
-  # observeEvent(input$jumpToP_rapport, {
-  #   output$error_msg_duurzaamheid <- renderText({
-  #     if(meer_vragen_duurzaamheid()) {
-  #       validate_need_functie("duurzaamheid") #alle vier vragen
-  #      } else { #slechts twee vragen
-  #       shiny::validate(
-  #         shiny::need(!opties_vraag(vraagnummers_categorie("duurzaamheid")[1])[1] %in%
-  #                       c(eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[1])))),
-  #                         eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[2]))))),
-  #                     'Maak een keuze bij alle bovenstaande vragen
-  #                   '))
-  #       }
-  #     })
-  #   if(meer_vragen_duurzaamheid()) {
-  #     req_functie("duurzaamheid") #alle vier vragen
-  #   } else { #slechts twee vragen
-  #     shiny::req(!opties_vraag(vraagnummers_categorie("duurzaamheid")[1])[1] %in%
-  #                  c(eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[1])))),
-  #                    eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[2]))))))
-  #   }
-  #     shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_rapport"]')
-  #     updateTabsetPanel(session, inputId = "tabset",
-  #                       selected = "panel_rapport")
-  # })
-
-  #===
-#========
-  
-  
-  # observeEvent(input$jumpToP_overig, {
-  #   if (private_beleggingen_uitvragen() == TRUE & private_beleggingen_tab_geopend$geopend == 0) {
-  #     
-  #   insertTab(inputId = "tabset",
-  #           tabPanel(title = "Private beleggingen", value = "panel_private_beleggingen",
-  #                    h3("Private beleggingen"),
-  #            #         actionButton(class = "back_button", 'jump_back_ToP_rapport', 'Ga terug'),
-  #            #         actionButton(class = "werk_button", 'jumpToP_projecties', "Projecties"),
-  #            #         shinycssloaders::withSpinner(
-  #            #           p(style = "text-align: justify;", htmlOutput("check_pagina")),
-  #            #           color = euroblue, #kleur van spinner
-  #            #         ),
-  #            #         h4(textOutput('profiel_conclusie_tekst')),
-  #            #         h4("Vertaling punten naar profiel per categorie: het te behalen aantal punten boven het minimale aantal punten
-  #            # wordt in vijf gelijke delen gesplitst. Het behaalde aantal punten valt in een van die vijf gebieden, die corresponderen met een profiel."),
-  #            #         p(style = "text-align: justify;",
-  #            #           htmlOutput("vertaaltabel_beleggingsdoelstelling"),
-  #            #           htmlOutput("vertaaltabel_financiele_situatie"),
-  #            #           htmlOutput("vertaaltabel_risicobereidheid"),
-  #            #           htmlOutput("vertaaltabel_visueel"),
-  #            #           htmlOutput("vertaaltabel_kennis_ervaring"))
-  #            actionButton(class = "back_button", 'jump_back_ToP_duurzaamheid', 'Ga terug'),
-  #            actionButton(class = "button", 'jumpToP_overig', "Ga naar de volgende pagina")
-  #           ),
-  #           target = "panel_duurzaamheid", position = "after",
-  #           select = TRUE, session = getDefaultReactiveDomain())
-  #   }
-  #   private_beleggingen_tab_geopend$geopend <- 1
-  #   shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_overig"]')
-  #   updateTabsetPanel(session, inputId = "tabset", selected = "panel_overig")
-  # })
-  
   #========
   
   geklikt_op_voorlopige_conclusie <- reactiveValues()
@@ -1544,7 +1343,8 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                actionButton(class = "back_button", 'jump_back_ToP_projecties', vertaler$t("vorige_pagina")),
                #actionButton(class = "button", 'jumpToP_belangrijke_informatie', "Belangrijke informatie"),
                #actionButton(class = "back_button", 'jump_back_ToP_tabel', 'Ga terug'),
-               actionButton(class = "werk_button", 'jumpToP_start', vertaler$t("ga_terug_naar_start")),
+               #actionButton(class = "werk_button", 'jumpToP_start', vertaler$t("ga_terug_naar_start")),
+               actionButton(class = "werk_button", 'jumpToP_taal', vertaler$t("ga_terug_naar_start")),
                h3(vertaler$t("tabel_in_rapport")),
                h4(vertaler$t("voor_toelichting_zie_rapport")),
                shinycssloaders::withSpinner(
@@ -1569,10 +1369,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     updateTabsetPanel(session, inputId = "tabset", selected = "panel_projecties")
   })
   #==
-  # observeEvent(input$jumpToP_belangrijke_informatie, {
-  #   shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_belangrijke_informatie"]')
-  #   updateTabsetPanel(session, inputId = "tabset", selected = "panel_belangrijke_informatie")
-  # })
+
 
   #===
   #grafieken info1
@@ -1636,7 +1433,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     ))
   })
   
-  # Sluit modal bij klik op OK, werkt voor beide dialoogjes
+  # Sluit modal bij klik op OK, werkt voor alle dialoogjes
   observeEvent(input$modal_ok, {
     removeModal()
   })
@@ -1678,74 +1475,6 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     ))
   })
   
-  #wil niet meer escapen:
-  # observeEvent(input$grafieken_info1, {
-  #   popup_content <-
-  #       tagList(
-  #         tags$h4(vertaler$t("toelichting_grafieken")),
-  #         
-  #         tags$p(
-  #           vertaler$t("grafieken_toelichting_intro"), 
-  #           
-  #           vertaler$t("getoonde_bedragen_in_toelichting_grafieken"),
-  #           format_bedrag_tabellen(startvermogen()), ". ",
-  #           vertaler$t("eventuele_so_buiten_beschouwing_gelaten"),
-  #           tags$br(),
-  #           vertaler$t("toelichting_grafieken_gunstig_ongunstig"),
-  #           vertaler$t("toelichting_grafieken_grotere_spreiding")
-  #         )
-  #       )
-  #   shinyalert(
-  #     title = "",
-  #     text = (popup_content),
-  #     size = "m",
-  #     closeOnEsc = TRUE,
-  #     closeOnClickOutside = TRUE,
-  #     html = TRUE,
-  #     type = "",
-  #     showConfirmButton = TRUE,
-  #     showCancelButton = FALSE,
-  #     confirmButtonText = "OK",
-  #     confirmButtonCol = "#94bcb2",
-  #     timer = 0,
-  #     imageUrl = "logo.png",
-  #     imageWidth = 200,
-  #     #imageHeight = 100,
-  #     animation = TRUE
-  #   )})
-  #grafieken info2
-  # observeEvent(input$grafieken_info2, {
-  #   shinyalert(
-  #     title = "",
-  #     text = str_c("
-  #     <html>
-  #     <h3>Toelichting bij de grafieken</h3>
-  #     <p>
-  #     In de grafieken worden drie risicoprofielen naast elkaar weergegeven.
-  #     In het midden staat het profiel dat u koos op de vorige pagina. Rechts en links daarvan staan resp. een risicovoller en een minder risicovol profiel.
-  #     De verticale as geeft het 3-jaars rendement weer en de horizontale as hoe vaak in duizend gevallen dit rendement kan voorkomen.
-  #     De getoonde bedragen zijn bedragen na 3 jaar, uitgaande van het te beleggen vermogen van ", format_bedrag_tabellen(startvermogen()), ".
-  #     Hierbij zijn eventuele stortingen of onttrekkingen buiten beschouwing gelaten.
-  #     \"Gunstig\" wil zeggen beter dan 95% van de gevallen, \"ongunstig\" slechter dan 95% van de gevallen.
-  #     Hoe groter de spreiding van de uitkomsten, hoe risicovoller het profiel.
-  #     </p>
-  #     </html>"),
-  #     size = "m",
-  #     closeOnEsc = TRUE,
-  #     closeOnClickOutside = TRUE,
-  #     html = TRUE,
-  #     type = "",
-  #     showConfirmButton = TRUE,
-  #     showCancelButton = FALSE,
-  #     confirmButtonText = "OK",
-  #     confirmButtonCol = "#94bcb2",
-  #     timer = 0,
-  #     imageUrl = "logo.png",
-  #     imageWidth = 200,
-  #     #imageHeight = 100,
-  #     animation = TRUE
-  #   )})
-
 
   #functie voor aantal punten die vraag x oplevert
   aantal_punten_vraag_x <- function(x) {
@@ -2019,10 +1748,9 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
 
   #NAAR MODULE
     #barplots per bm
-    data_voor_barcharts <-
+    data_voor_barcharts <- 
        index_paden_360m_maal1000_params_12_36_60_120_360_geom_returns_met_bijst_onttr %>%
        filter(horizon == "3 jaar")
- 
   #===
    observeEvent(input$onttrekking, {
      reset("bijstorting")
@@ -2107,8 +1835,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     # en hernoem Antwoord met !!vertaler$t
     
     data_rapport <- reactive( #deze tabel gaat naat PDF
-      #tibble(!!vertaler$t("vraag") := c(vertaler$t("uw_naam"), kan met rename
-                   tibble(Vraag = c(vertaler$t("uw_naam"),
+                tibble(Vraag = c(vertaler$t("uw_naam"),
                         vertaler$t("email_adres"),
                         vertaler$t("dit_beleggersprofiel_is_ingevuld_voor"),
                         if(entiteit() %in% c("bv", "ve", "st", "ov")) 
@@ -2209,7 +1936,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                         )
                   ) |> 
                   mutate(Antwoord = str_remove(Antwoord, " - hieronder opent een tekstvakje waarin u een toelichting kunt schrijven"),
-                         Antwoord = str_remove(Antwoord, " - zie ook de invulvelden hieronder"))
+                         Antwoord = str_remove(Antwoord, " - zie ook de invulvelden hieronder")) 
             )
     
     
@@ -2288,27 +2015,21 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     })
     
     vette_regels <- reactive({
-      grep("I -|V -|Voorlopige conclusie -|Preliminary conclusion -|Private beleggingen -|Private investments",  data_rapport()$Vraag) #hij pakt de eerste niet!?
-      #grep("[I|V|Voorlopige conclusie]",  data_rapport()$`Vraag`) #hij pakt de eerste niet!?
-      # Build the regex pattern dynamically from translated strings
-      # pattern <- paste(
-      #   vertaler$t("roman-one-prefix"),          # e.g., "I -" in EN, "I -" in NL (roman numerals are often consistent)
-      #   vertaler$t("roman-five-prefix"),         # e.g., "V -"
-      #   vertaler$t("prelim-conclusion-nl"),      # e.g., "Voorlopige conclusie -" in NL
-      #   vertaler$t("prelim-conclusion-en"),      # e.g., "Preliminary conclusion -" in EN
-      #   vertaler$t("private-investments-nl"),    # e.g., "Private beleggingen -" in NL
-      #   vertaler$t("private-investments-en"),    # e.g., "Private investments" in EN
-      #   sep = "|"  # Alternation in regex
-      # )
-      # 
-      # # Now use the built pattern
-      # grep(pattern, data_rapport()$Vraag)
+      c(
+        which(str_detect(data_rapport()[[1]], vertaler$t("beleggingsdoelstelling"))),
+        which(str_detect(data_rapport()[[1]], vertaler$t("beleggingsdoelstelling"))),
+        
+      grep("I - Beleggingsdoelstelling |I - Investment |II - |V -|Voorlopige |Preliminary |Private",  data_rapport()$Vraag)
+      )
+      #hij pakt de eerste niet!?
     })
 
     #html tabel voor op de pagina Tabel, na verzenden van het rapport
     output$tabel_rapport <- function() {
       data_rapport() %>%
-        as_tibble() %>%
+        as_tibble() %>% 
+        rename(!!vertaler$t("vraag") := Vraag,
+               !!vertaler$t("antwoord") := Antwoord) %>% 
         kbl() %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "center") %>%
         row_spec(vette_regels(), bold = TRUE)
@@ -2341,7 +2062,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
         vertaler = vertaler,
         taal,
         data_voor_barcharts = data_voor_barcharts, 
-        anoniem = FALSE, 
+        anoniem = FALSE,
         profiel_conclusie = profiel_conclusie,
         startvermogen = startvermogen
         )
@@ -2361,38 +2082,65 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   
   rv <- reactiveValues(trigger_download = 0)   # NEW: to trigger real download after confirm
   
+
+  
   observeEvent(input$start_rapport, {
     showModal(modalDialog(
       title = NULL,
       size = "l",
       easyClose = TRUE,
-      
       tags$div(
         style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
         # Logo bovenaan
         tags$div(
           style = "margin-bottom: 30px;",
           tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
-       ),
-        title = "Titel",#vertaler$t("bevestig_genereer_rapport"),   # e.g. "Bevestig rapport genereren"
-        size = "m",
-        easyClose = FALSE
-      ),
-        footer = tagList(
-          modalButton("annuleren"),#vertaler$t("annuleren")),
-          actionButton("bevestig_rapport_maken",
-                       label = "start rapport", #vertaler$t("ok_start_download"),
-                       class = "button",
-                       icon = icon("check"))
         ),
-        tags$div(
-          style = "text-align: center; padding: 20px;",
-          tags$h4(vertaler$t("rapport_maken_en_versturen")),
-          #tags$p(vertaler$t("na_ok_start_download")),   # customize these translations
-          tags$p(style = "color: #666; font-size: 0.95em;",
-                 vertaler$t("het_maken_en_versturen_kan_even_duren"))
+        tags$h3(vertaler$t("even_geduld"), style = "margin-bottom: 20px;"),
+        tags$p(
+          vertaler$t("het_maken_en_versturen_kan_even_duren"), tags$br()
         )
-      ))
+      ),
+      # Footer met gecentreerde OK-knop (onderaan in het midden)
+      footer = tags$div(
+        style = "text-align: center; width: 100%;",
+        actionButton("bevestig_rapport_maken",
+                                      label = vertaler$t("rapport_maken_en_versturen"),
+                                      class = "button",
+                                      icon = icon("check"))
+       )
+     )
+    )
+      # title = NULL,
+      # size = "l",
+      # easyClose = TRUE,
+      # 
+      # tags$div(
+      #   style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
+      #   # Logo bovenaan
+      #   tags$div(
+      #     style = "margin-bottom: 30px;",
+      #     tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
+      #  ),
+      #   title = "Titel",#vertaler$t("bevestig_genereer_rapport"),   # e.g. "Bevestig rapport genereren"
+      #   size = "m",
+      #   easyClose = FALSE
+      # ),
+      #   footer = tagList(
+      #     modalButton("annuleren"),#vertaler$t("annuleren")),
+      #     actionButton("bevestig_rapport_maken",
+      #                  label = "start rapport", #vertaler$t("ok_start_download"),
+      #                  class = "button",
+      #                  icon = icon("check"))
+      #   ),
+      #   tags$div(
+      #     style = "text-align: center; padding: 20px;",
+      #     tags$h4(vertaler$t("rapport_maken_en_versturen")),
+      #     #tags$p(vertaler$t("na_ok_start_download")),   # customize these translations
+      #     tags$p(style = "color: #666; font-size: 0.95em;",
+      #            vertaler$t("het_maken_en_versturen_kan_even_duren"))
+      #   )
+      # ))
   })
   
   
@@ -2423,7 +2171,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
         # Store timestamp for use in content() and emails
         download$download_tijdstip <- tijd
         
-        str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " - ", tijd, ".pdf")
+        str_c(vertaler$t("beleggersprofiel"), " ", naam_in_file_en_aanhef(), " - ", tijd, ".pdf")
       },
       
       content = function(file) {
@@ -2432,12 +2180,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
           detail = NULL, 
           value = 0.1, {
             
-            # ────────────────────────────────────────────────────────
-            #   Your COMPLETE original content logic starts here
-            #   (almost unchanged – just moved inside)
-            # ────────────────────────────────────────────────────────
-            
-            subject <- str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip)
+            subject <- str_c(vertaler$t("beleggersprofiel"), " ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip)
             pdf_filename <- str_c(subject, ".pdf")
             png_3jrs_name <- str_c("fig_3jaars_blprfl_", naam_in_file_en_aanhef(), "_", download$download_tijdstip, ".png")
             png_scen_name <- str_c("fig_scenarios_blprfl_", naam_in_file_en_aanhef(), "_", download$download_tijdstip, ".png")
@@ -2520,32 +2263,37 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
             
             # Emails (your original code – adjust if/smtp_username logic as needed)
             message("Sending message to ", input$emailadres, ".")
+
+            #versturen beleggersprofiel pdf rapport naar client
+            #in testmodus vanuit pp anders vanuit ba
+            verzenden <- if (test_modus()) smtp_pp else smtp_ba
             
-            # envelope(
-            #   from = "pieterprins2@gmail.com",
-            #   to = unlist(str_split(str_replace_all(str_replace_all(input$emailadres, ";", ","), " ", ""), ",")),
-            #   cc = if(test_modus()) {NULL} else {"maingay@bavandoorn.nl"},
-            #   subject = subject
-            # ) %>%
-            #   text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef())) %>%
-            #   attachment(file, disposition = "attachment", name = pdf_filename) |>
-            #   smtp()
-            # 
-            # setProgress(value = 0.9, message = vertaler$t("rapport_versturen"))
-            # 
-            # envelope(
-            #   from = "pieterprins2@gmail.com",
-            #   to = "pieterprins@yahoo.com",   # your test/admin logic here
-            #   subject = subject
-            # ) %>%
-            #   text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>%
-            #   attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
-            #   attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
-            #   attachment(file, disposition = "attachment", name = pdf_filename) |>
-            #   attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
-            #   attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
-            #   smtp()
-            # 
+            envelope(
+              from = if(test_modus()) {smtp_username_pp} else {smtp_username_ba},
+              to = unlist(str_split(str_replace_all(str_replace_all(input$emailadres, ";", ","), " ", ""), ",")),
+              cc = if(test_modus()) {NULL} else {"maingay@bavandoorn.nl"},
+              subject = subject
+              ) %>%
+                text(str_c(vertaler$t("beleggersprofiel"), " ", naam_in_file_en_aanhef())) %>%
+                attachment(file, disposition = "attachment", name = pdf_filename) |>
+              verzenden()
+
+            setProgress(value = 0.9, message = vertaler$t("rapport_versturen"))
+
+            #versturen beleggersprofiel pdf rapport naar client
+            envelope(
+              from = if(test_modus()) {smtp_username_pp} else {smtp_username_ba},
+              to = if(test_modus()) {"pieterprins@yahoo.com"} else {"administratie@bavandoorn.nl"},
+              subject = subject
+              ) %>%
+                text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>%
+                attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+                attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+                attachment(file, disposition = "attachment", name = pdf_filename) |>
+                attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
+                attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
+              smtp_ba()
+
             setProgress(value = 0.99)
             
             # Success!
@@ -2575,33 +2323,33 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     })
     
     # 5. Your existing success modal (unchanged)
-    observeEvent(download$success_trigger, {
-      req(download$success_trigger > 0)
-      showModal(modalDialog(
-        title = NULL,
-        size = "l",
-        easyClose = TRUE,
-        tags$div(
-          style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
-          tags$div(
-            style = "margin-bottom: 30px;",
-            tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
-          ),
-          tags$h3(vertaler$t("dank_u_wel"), style = "margin-bottom: 20px;"),
-          tags$p(
-            vertaler$t("rapport_is_gemaakt"), tags$br()
-          )
-        ),
-        footer = tags$div(
-          style = "text-align: center; width: 100%;",
-          actionButton(
-            "modal_ok",
-            "OK",
-            style = "background-color: #94bcb2; color: white; border: none; padding: 10px 40px; font-size: 16px;"
-          )
-        )
-      ))
-    })
+    # observeEvent(download$success_trigger, {
+    #   req(download$success_trigger > 0)
+    #   showModal(modalDialog(
+    #     title = NULL,
+    #     size = "l",
+    #     easyClose = TRUE,
+    #     tags$div(
+    #       style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
+    #       tags$div(
+    #         style = "margin-bottom: 30px;",
+    #         tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
+    #       ),
+    #       tags$h3(vertaler$t("dank_u_wel"), style = "margin-bottom: 20px;"),
+    #       tags$p(
+    #         vertaler$t("rapport_is_gemaakt"), tags$br()
+    #       )
+    #     ),
+    #     footer = tags$div(
+    #       style = "text-align: center; width: 100%;",
+    #       actionButton(
+    #         "modal_ok",
+    #         "OK",
+    #         style = "background-color: #94bcb2; color: white; border: none; padding: 10px 40px; font-size: 16px;"
+    #       )
+    #     )
+    #   ))
+    # })
     
     # Optional: cleanup on session end (you already have something similar – keep/adapt)
     session$onSessionEnded(function() {

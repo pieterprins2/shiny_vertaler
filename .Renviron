@@ -1,0 +1,11 @@
+SMTP_USERNAME_PP="pieterprins2@gmail.com"
+SMTP_PASSWORD_PP="ohfsvttthbtyypts"
+SMTP_SERVER_PP="smtp.gmail.com"
+SMTP_PORT_PP=587
+SMTP_USERNAME_BA="indicatie_beleggersprofiel@bavandoorn.nl"
+SMTP_PASSWORD_BA="Pak78405"
+SMTP_SERVER_BA="smtp.office365.com"
+SMTP_PORT_BA=587
+name='pieter-prins'
+token='9C216407260A270B90EFC3A79BED6A6C',
+secret='tn8l5OvwBC/Rg4E/BrCS0fXGNv/Jr6ruDXBPwtxp'

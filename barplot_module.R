@@ -341,13 +341,20 @@ barplot_drie_Server <- function(id, vertaler, taal, data_voor_barcharts, anoniem
                        big_mark_local = big_mark_local(),
                        decimal_mark_local = decimal_mark_local()) +
         labs(x = vertaler$t("driejaars_rendement_op_jaarbasis"), y = vertaler$t("aantal_per_duizend_gevallen")) +
+        annotate(geom = "label", x = 0.32, y = max_y_barplot(benchmark = profiel_conclusie)/2, 
+                 label = str_c(vertaler$t("profiel"), " ", profiel_conclusie, ", horizon 3 ", vertaler$t("jaar")), 
+                 colour = "gray30",fill = "white", alpha = .9, size = 6) +
         theme(axis.title.y.right = element_blank(),
               axis.text.y.right = element_blank(),
               axis.ticks.y.right = element_blank(),
               legend.position = "none",
               axis.text.x = element_text(size = 10, colour = "gray20"),
               axis.text.y = element_text(size = 10, colour = "gray20"),
-              strip.text.x = element_text(size = 10)
+              #strip.text.x = element_text(size = 10)
+              #van stack overflow geplukt: oplossing voor verwijderen facet balk
+              strip.background = element_blank(), 
+              strip.text = element_text(color = "transparent"),
+              panel.spacing.y = unit(-0.8, "lines")
         )
     })
     
