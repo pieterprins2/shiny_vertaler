@@ -1018,7 +1018,7 @@ output$ui_vakje_vul_naam_in <- renderUI({
   #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
   #tagQuery(
     textInput(inputId = "naam",
-               value = "testen",
+               value = "",
               placeholder = "...",
               label = vertaler$t("uw_naam"),
               width = '750px')#)$find("input")$addAttrs(autocomplete = "off")$allTags()
