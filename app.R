@@ -69,7 +69,7 @@ if(str_detect(getwd(), "pieter")) {rsconnect::writeManifest()}
 # deze gegevens staan in het bestand .Renviron en worden hieronder ingelezen
 # de .Renviron file staat in de root van de project folder
 
-#test_modus <- naam = testen
+test_modus <- FALSE
 
 IP <- content(GET("https://api.ipify.org?format=json"))$ip
 
@@ -429,6 +429,11 @@ theme_modern <- bs_theme(
       bottom: auto !important;
       width: 500px !important;
       max-width: 90% !important;
+    }
+    /*#donkerrode waarschuwingen - check */
+    .shiny-output-error-validation {
+      color: #bf0a30;
+      font-weight: bold;
     }
   ")
 # ────────────────────────────────────────────────
@@ -821,7 +826,8 @@ nav_panel(title = uiOutput("ui_tabset_rapport_titel"), value = "panel_rapport", 
   output$ui_tabset_rapport_titel <- renderUI({taal(); vertaler$t("rapport")})
 
   test_modus <- reactive({
-    naam() == "testen"
+    req(naam())
+    if(naam() == "testen") {TRUE} else {FALSE}
   })
 
   #===keepAlive voor de teller
@@ -1018,14 +1024,14 @@ output$ui_vakje_vul_naam_in <- renderUI({
   #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
   #tagQuery(
     textInput(inputId = "naam",
-               value = "",
+              value = NULL,
               placeholder = "...",
               label = vertaler$t("uw_naam"),
               width = '750px')#)$find("input")$addAttrs(autocomplete = "off")$allTags()
 })
 
 output$ui_vraag_emailadres <- renderUI({
-  req(test_modus())
+ # req(test_modus())
   #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
  # tagQuery(
     textInput(inputId = "emailadres",
@@ -1119,7 +1125,7 @@ output$ui_hieronder_vraag_interesse_private_beleggingen <- reactive({vertaler$t(
 output$ui_intro_vraag_entiteit <- reactive({vertaler$t("intro_vraag_entiteit")})
 
 output$ui_vraag_entiteit <- renderUI({
-  req(test_modus())  # Ensures test_modus() exists before using it
+  #req(test_modus())  # Ensures test_modus() exists before using it
   selectInput(inputId = "entiteit",
               choices = c(vertaler$t("maak_keuze"),
                           #Maak hieronder een keuze",
