@@ -33,13 +33,13 @@ library(shinyalert)
 if(str_detect(getwd(), "pieter")) {rsconnect::writeManifest()}
 
   #opzet vertaling vanuit spreadsheet
-  df <- read_excel("translations/translations.xlsx", sheet = "Sheet1")
+  df_translations <- read_excel("translations/translations.xlsx", sheet = "Sheet1")
   #vqn excel sheet naar json
   # Build the JSON structure ---------------------------------------------
   json_structure <- list(
     cultural_date_format = "%d-%m-%Y",
-    languages = colnames(df),
-    translation = df
+    languages = colnames(df_translations),
+    translation = df_translations
   )
   # Convert to JSON (pretty = TRUE for nice formatting)
   json_output <- toJSON(json_structure, 
@@ -158,320 +158,672 @@ format_datum_tijd_nl <- function(datum_tijd) {
 
 #==== vragen en antwoorden database
 vragen_antwoorden_excel_bestand <- "vragen_antwoorden_vijf_dz_plus.xlsx"
-
-vragen_antwoorden_database <- function(entiteit = "prive", taal = "nl") {
-  #eenvoudige gevallen:
-  if(entiteit %in% c("prive", "enof", "bv", "ve")) {
-    vragen_antwoorden_start <-
-      read_xlsx(vragen_antwoorden_excel_bestand, sheet = str_c("vragen_antwoorden_", entiteit, "_", taal))
-  #overige een voor een, ivm voorkomen teveel onderhoud in additionele excel sheets
-  } else if(taal == "nl" & entiteit == "st") {
-    vragen_antwoorden_start <-
-      read_xlsx(vragen_antwoorden_excel_bestand, sheet = str_c("vragen_antwoorden_", "ve", "_", "nl")) %>% 
-      mutate_at(vars(c(vraag, antwoord, selected)), ~ str_replace(., "vereniging", "stichting"))
-  } else if(taal == "nl" & entiteit == "ov") {
-    vragen_antwoorden_start <-
-      read_xlsx(vragen_antwoorden_excel_bestand, sheet = str_c("vragen_antwoorden_", "ve", "_", "nl")) %>% 
-      mutate_at(vars(c(vraag, antwoord, selected)), ~ str_replace(., "vereniging", "organisatie"))
-  } else if(taal == "en" & entiteit == "st") {
-    vragen_antwoorden_start <-
-      read_xlsx(vragen_antwoorden_excel_bestand, sheet = str_c("vragen_antwoorden_", "ve", "_", "en")) %>% 
-      mutate_at(vars(c(vraag, antwoord, selected)), ~ str_replace(., "association", "foundation"))
-  } else if(taal == "en" & entiteit == "ov") {
-    vragen_antwoorden_start <-
-      read_xlsx(vragen_antwoorden_excel_bestand, sheet = str_c("vragen_antwoorden_", "ve", "_", "en")) %>% 
-      mutate_at(vars(c(vraag, antwoord, selected)), ~ str_replace(., "association", "organisation"))
-  }
-  
-  vragen_antwoorden_ruw <- 
-    vragen_antwoorden_start %>% 
-    group_by(vraag) %>%
-    uncount((1:n() == 1) + 1) %>% #voegt een regel toe
-    mutate(n = n(),
-           #nr = seq(n),
-           nr = row_number(),
-           antwoord_aanhef = vraag,
-           #vult het eerste antwoord in, nl. "Maak een hieronder keuze:"
-           antwoord = ifelse(nr == 1,  vertaler$t("maak_keuze"), antwoord),#Maak hieronder een keuze:", antwoord),
-           selected = ifelse(nr == 1, NA, selected),
-           punten = ifelse(nr == 1, 0, punten)) %>%
-    select(-c(n, nr)) %>%
-    ungroup()
-    #vraagnummer maken (ipv in excel, is flexibeler)
-    factor_vragen <-
-      vragen_antwoorden_ruw %>%
-      select(vraag) %>%
-      unique() %>% pull()
-
-    vragen_antwoorden_ruw %>%
-      mutate(nummer = as.numeric(factor(vraag, levels = factor_vragen)))
-}
+#
+vragen_antwoorden_start_new <-
+  bind_rows(read_xlsx(vragen_antwoorden_excel_bestand, sheet = "vragen_antwoorden_prive"),
+            read_xlsx(vragen_antwoorden_excel_bestand, sheet = "vragen_antwoorden_enof"),
+            read_xlsx(vragen_antwoorden_excel_bestand, sheet = "vragen_antwoorden_bv"),
+            read_xlsx(vragen_antwoorden_excel_bestand, sheet = "vragen_antwoorden_ve"),
+            #st
+            read_xlsx(vragen_antwoorden_excel_bestand, sheet = "vragen_antwoorden_ve") %>%
+              mutate_at(vars(c(vraag_nl, antwoord_nl, selected_nl)), ~ str_replace(., "vereniging", "stichting")) %>%
+              mutate_at(vars(c(vraag_en, antwoord_en, selected_en)), ~ str_replace(., "association", "foundation")),
+            #org
+            read_xlsx(vragen_antwoorden_excel_bestand, sheet = "vragen_antwoorden_ve") %>%
+              mutate_at(vars(c(vraag_nl, antwoord_nl, selected_nl)), ~ str_replace(., "vereniging", "organisatie")) %>%
+              mutate_at(vars(c(vraag_en, antwoord_en, selected_en)), ~ str_replace(., "association", "organization"))) %>%
+  pivot_longer(
+            cols = ends_with("_nl") | ends_with("_en"),
+            names_to = c(".value", "taal"),
+            names_sep = "_"
+          ) %>%
+  group_by(entiteit, taal, vraag) %>%
+  uncount((1:n() == 1) + 1) %>%
+  mutate(n = n(),
+         #nr = seq(n),
+         nr = row_number(),
+         antwoord_aanhef = vraag,
+         #vult het eerste antwoord in, nl. "Maak een hieronder keuze:"
+         antwoord = ifelse(nr == 1 & taal == "nl",  "Maak hieronder een keuze:", antwoord),#Maak hieronder een keuze:", antwoord),
+         antwoord = ifelse(nr == 1 & taal == "en",  "Make a choice below:", antwoord),#Maak hieronder een keuze:", antwoord),
+         selected = ifelse(nr == 1, NA, selected),
+         punten = ifelse(nr == 1, 0, punten)) %>%
+  select(-c(n, nr)) %>%
+  ungroup() %>%
+  select(taal, entiteit, everything())
 
 
-# UI
-ui <- 
-  fluidPage(
+theme_modern <- bs_theme(
+  version = 5,
+  bootswatch = "flatly",
+  primary = "#4E9080",
+  base_font = font_google("Inter", local = TRUE),
+  heading_font = font_google("Inter", local = TRUE, wght = 600)
+) %>%
+  bs_add_rules("
+    /* knoppen voor SO invoer */
+    .btn-neutraal {
+      background-color: #4E9080;
+      border-color: #ced4da;
+      color: white;
+    }
+    .btn-neutraal.active {
+      background-color: #adb5bd;
+      border-color: #adb5bd;
+      color: white;
+    }
+    /* ────────────────────────────────────────────────
+       NAVBAR BACKGROUND – Flatly default (light grey)
+    ──────────────────────────────────────────────── */
+    .navbar,
+    .navbar-expand {
+      background-color: #f8f9fa !important;
+      border-bottom: 1px solid #dee2e6 !important;
+    }
+
+    /* Prevent any green/teal from bleeding into navbar */
+    .navbar,
+    .navbar-expand,
+    .bg-primary,
+    .bg-success,
+    .bg-teal,
+    .bg-green {
+      background-color: #f8f9fa !important;
+    }
+
+    /* ────────────────────────────────────────────────
+       NAVBAR – LOGO & BRAND
+    ──────────────────────────────────────────────── */
+    .navbar-brand {
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px;
+    }
+
+    .navbar-brand img {
+      max-height: 70px !important;           /* adjust as desired */
+      width: auto !important;
+      object-fit: contain;
+      margin: 0 !important;
+    }
+
+    /* ────────────────────────────────────────────────
+       NAVBAR – MENU ITEMS (GENERAL)
+    ──────────────────────────────────────────────── */
+    .navbar-nav .nav-link {
+      font-size: 1.15rem !important;         /* bigger font */
+      padding: 0.65rem 1.2rem !important;
+      transition: all 0.25s ease;
+      border-radius: 8px;
+      background-color: #f8f9fa !important;  /* grey background inactive */
+    }
+    /* Vertically center text in ALL nav links */
+    .navbar-nav .nav-link {
+      display: flex !important;          /* turn into flex container */
+      align-items: center !important;    /* vertically center content */
+      justify-content: center !important; /* horizontally center if needed (bonus) */
+      height: 100% !important;           /* ensure it fills the nav item height */
+      min-height: 50px;                  /* optional: enforce a minimum height if navbar is tall */
+    }
     
-  tags$head(
-   tags$link(rel = "stylesheet", type = "text/css", href = "beleggersprofiel.css")
-   ),
-  # In UI:
-  tags$head(
-    tags$script(HTML("
-    Shiny.addCustomMessageHandler('triggerDownload', function(message) {
-      var link = document.createElement('a');
-      link.href = message.href;           // the Shiny download endpoint
-      link.download = message.filename;   // suggested name
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
-  "))
+    /* If you have varying padding already, you can fine-tune: */
+    .navbar-nav .nav-link {
+      padding-top: 0.65rem !important;
+      padding-bottom: 0.65rem !important;
+      /* your existing padding was 0.65rem 1.2rem → symmetric vertical padding helps centering */
+    }
+
+    /* ────────────────────────────────────────────────
+       ALL TABS EXCEPT THE LAST THREE
+       Inactive: bold #4E9080 + grey bg
+       Active/hover: #4E9080 bg + white bold
+    ──────────────────────────────────────────────── */
+    .navbar-nav .nav-link:not([data-value='panel_voorlopige_conclusie']):not([data-value='panel_projecties']):not([data-value='panel_tabel']) {
+      color: #4E9080 !important;
+      font-weight: 600 !important;           /* bold when inactive */
+    }
+
+    .navbar-nav .nav-link:not([data-value='panel_voorlopige_conclusie']):not([data-value='panel_projecties']):not([data-value='panel_tabel']):hover,
+    .navbar-nav .nav-link:not([data-value='panel_voorlopige_conclusie']):not([data-value='panel_projecties']):not([data-value='panel_tabel']).active {
+      color: white !important;
+      background-color: #4E9080 !important;
+      font-weight: 600 !important;           /* extra bold when active */
+    }
+
+    /* ────────────────────────────────────────────────
+       LAST THREE TABS
+       Inactive: blue text + grey bg
+       Active/hover: white text + blue bg
+    ──────────────────────────────────────────────── */
+    .navbar-nav .nav-link[data-value='panel_voorlopige_conclusie'],
+    .navbar-nav .nav-link[data-value='panel_projecties'],
+    .navbar-nav .nav-link[data-value='panel_tabel'] {
+      font-size: 1rem !important;     /* ← explicitly match the others */
+      color: #004494 !important;             /* blue text when inactive */
+      background-color: #f8f9fa !important;  /* grey bg inactive */
+      font-weight: 500 !important;           /* normal weight inactive */
+    }
+
+    .navbar-nav .nav-link[data-value='panel_voorlopige_conclusie']:hover,
+    .navbar-nav .nav-link[data-value='panel_projecties']:hover,
+    .navbar-nav .nav-link[data-value='panel_tabel']:hover,
+    .navbar-nav .nav-link[data-value='panel_voorlopige_conclusie'].active,
+    .navbar-nav .nav-link[data-value='panel_projecties'].active,
+    .navbar-nav .nav-link[data-value='panel_tabel'].active {
+      font-size: 1rem !important;     /* ← explicitly match the others */
+      color: white !important;               /* white text when active/hover */
+      background-color: #004494 !important;
+      font-weight: 600 !important;           /* bold when active/hover */
+      border-radius: 8px;
+    }
+
+    /* ────────────────────────────────────────────────
+       VERTICAL CENTERING – LOGO & FLAG/EMOJI
+    ──────────────────────────────────────────────── */
+    .navbar-nav .nav-link:first-child,
+    .navbar-nav .nav-link[data-value='panel_voorlopige_conclusie'] {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px;
+    }
+
+    .navbar-nav .nav-link:first-child span,
+    .navbar-nav .nav-link:first-child [data-emoji],
+    .navbar-nav .nav-link em {
+      line-height: 1;
+      font-size: 1.3em;
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* ────────────────────────────────────────────────
+       BUTTONS, CARDS, OTHER STYLES
+    ──────────────────────────────────────────────── */
+    .card {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-primary {
+      background-color: #4E9080;
+      border-color: #4E9080;
+    }
+    .btn-primary:hover {
+      background-color: #3e7566;
+    }
+
+    .button {
+      background-color: #4E9080;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    .back_button {
+      background-color: #80808080;
+      color: white;
+      border: 1px solid #dee2e6;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    .werk_button {
+      background-color: #004494;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    .infobutton {
+      background-color: #94bcb2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    .disabled {
+      opacity: 0.65;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+    
+/* Make the notification bigger and move it (e.g. top-right or center) */
+    .shiny-notification {
+      position: fixed !important;
+      top: 20px !important;          /* or calc(50% - 100px) for center */
+      right: 20px !important;        /* or left: 50%; transform: translateX(-50%) for center */
+      width: 400px !important;       /* wider box */
+      height: auto !important;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 9999 !important;
+    }
+    
+    /* Style the progress inside it */
+    .shiny-notification .progress {
+      height: 12px !important;       /* thicker bar */
+      margin: 10px 0 !important;
+    }
+    .shiny-notification .progress-bar {
+      background-color: #4E9080 !important;
+      transition: width 0.4s ease;
+    }
+    .shiny-notification .shiny-notification-content {
+      font-size: 40px !important;
+      padding: 15px !important;
+      text-align: center !important;
+      color: #444444 !important;
+    }
+    .shiny-notification .shiny-notification-close {
+      font-size: 18px !important;
+    }
+    .shiny-notification {
+      top: calc(50% - 80px) !important;
+      left: calc(50% - 250px) !important;
+      right: auto !important;
+      bottom: auto !important;
+      width: 500px !important;
+      max-width: 90% !important;
+    }
+  ")
+# ────────────────────────────────────────────────
+# UI – fully static with page_navbar + nav_panel
+# ────────────────────────────────────────────────
+ui <- page_navbar(
+  id = "tabset", 
+  title = div(
+    img(
+      src = "logo.png",
+      height = "80px",
+      style = "margin-top:-8px; margin-right:12px;"
+    ),
+    "" #geen tekst in titel, moet anders in server
   ),
-  #===
-  tags$head(
-    HTML(
-      "
-          <script>
-          var socket_timeout_interval
-          var n = 0
-          $(document).on('shiny:connected', function(event) {
-          socket_timeout_interval = setInterval(function(){
-          Shiny.onInputChange('tellertje_actief', n++)
-          }, 15000)
-          });
-          $(document).on('shiny:disconnected', function(event) {
-          clearInterval(socket_timeout_interval)
-          });
-          </script>
-          "
+  
+  theme = theme_modern,
+  fillable = TRUE,
+  collapsible = TRUE,
+  
+  # ==========================================================
+  # HEADER — everything that is NOT a nav_panel goes here
+  # ==========================================================
+  header = tagList(
+    
+    tags$head(
+      # tags$link(
+      #   rel = "stylesheet",
+      #   type = "text/css",
+      #   href = "beleggersprofiel.css"
+      # ),
+      
+      # Trigger download from server
+      tags$script(HTML("
+        Shiny.addCustomMessageHandler('triggerDownload', function(message) {
+          const link = document.createElement('a');
+          link.href = message.href;
+          link.download = message.filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+      ")),
+      
+      # Heartbeat / keep-alive
+      tags$script(HTML("
+        let socket_interval;
+        let counter = 0;
+
+        $(document).on('shiny:connected', function () {
+          socket_interval = setInterval(function () {
+            Shiny.setInputValue('heartbeat', counter++, {priority: 'event'});
+          }, 15000);
+        });
+
+        $(document).on('shiny:disconnected', function () {
+          clearInterval(socket_interval);
+        });
+      "))
+    ),
+    
+    shinyjs::useShinyjs(),
+    usei18n(vertaler)
+  ),
+  
+  # ==========================================================
+  # TAAL
+  # ==========================================================
+  nav_panel(
+    #ui_tabset_taal_titel is de vlag
+    title = uiOutput("ui_tabset_taal_titel"), value = "panel_taal", class = "p-4",
+    card(
+      card_header(h4(uiOutput("ui_vul_taal_in"))),
+      card_body(layout_columns(
+        col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+        uiOutput("ui_jumpToP_start_button")
+        )
+      )
+    )
+   ),
+   # ==========================================================
+   # START
+   # ==========================================================
+  nav_panel(title = "Start", value = "panel_start", class = "p-4",
+     card(
+        card_header(h3(uiOutput("ui_intro_head"))),
+        card_body(
+          h5(uiOutput("ui_intro_text")),
+          #h5(uiOutput("ui_vul_naam_in")),
+          h5(uiOutput("ui_vakje_vul_naam_in")),
+          h5(uiOutput("ui_u_krijgt_rapport_text")),
+          h5(uiOutput("ui_vraag_emailadres")),
+          #h5(uiOutput("ui_intro_vraag_entiteit")),
+          h5(uiOutput("ui_vraag_entiteit")),
+          h5(uiOutput("ui_vraag_naam_entiteit")),
+          h5(uiOutput("ui_vraag_beleggingsstatuut")),
+          textOutput("error_msg_start")
+        ),
+        card_footer(
+          layout_columns(
+            col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+            uiOutput("ui_jump_back_ToP_taal_button"),
+            NULL,
+            uiOutput("ui_jumpToP_beleggingsdoelstelling_button")
+          )
+        )
+      )
+    ),
+#   # ==========================================================
+#   # I. BELEGGINGSDOELSTELLING
+#   # ==========================================================
+  nav_panel(title = "I", value = "panel_beleggingsdoelstelling", class = "p-4",
+    card(
+      card_header(h3("I. ", uiOutput("ui_beleggingsdoelstelling", inline = TRUE))),
+      card_body(
+        h5(uiOutput("ui_aanhef_doelstelling")),
+        uiOutput("ui_selectize_beleggingsdoelstelling"),
+        uiOutput("ui_cond_panel_toelichting_doelstelling"),
+        textOutput("error_msg_beleggingsdoelstelling")
+      ),
+      card_footer(
+        layout_columns(
+          col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+          uiOutput("ui_jump_back_ToP_start_button"),
+          NULL,
+          uiOutput("ui_jumpToP_financiele_situatie_button")
+        )
+      )
     )
   ),
-  
-  #===
-  useShinyjs(),
-  shiny.i18n::usei18n(vertaler),
-  
-   navbarPage(
-    title = div(img(src='logo.png', #staat in www/
-    style = "margin-top: -14px;
-              padding-right: 10px;
-              padding-bottom: 10px",
-    height = 60)),
-    windowTitle = "Beleggersprofiel - B.A. van Doorn",
-    collapsible = TRUE,
-    selected = NULL,
-    id = "tabset",
-         tabPanel(title = uiOutput("ui_tabset_taal_titel"), value = "panel_taal", id = "panel_taal",
-           h4(uiOutput("ui_vul_taal_in")),
-           actionButton(class = "button", 'jumpToP_start', vertaler$t("volgende_pagina"))
-          ),
-         tabPanel(title = "Start", value = "panel_start", id = "panel_start",
-           h3(uiOutput("ui_intro_head")),
-           h4(uiOutput("ui_intro_text")),
-           br(),
-           h4(uiOutput("ui_vul_naam_in")),
-           #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
-           tagQuery(textInput("naam", 
-                              value = "testen",
-                              placeholder = "...",
-                              label = vertaler$t("uw_naam"), 
-                              width = '500px'))$find("input")$addAttrs(autocomplete = "off")$allTags(),
-           #h4("Nadat dit beleggersprofiel is ingevuld worden de resultaten ervan verwerkt in een rapport. Dit rapport wordt via e-mail naar u toegestuurd."),
-           h4(uiOutput("ui_u_krijgt_rapport_text")),
-           uiOutput("ui_vraag_emailadres"),
-           br(),
-           h4(uiOutput("ui_intro_vraag_entiteit")),
-           #h4("Sommige vragen, of de formulering ervan, hangen af van het soort entiteit dat u vertegenwoordigt."),
-           uiOutput("ui_vraag_entiteit"),
-           uiOutput("ui_vraag_naam_entiteit"),
-           uiOutput("ui_vraag_beleggingsstatuut"),
-           textOutput('error_msg_start'),
-           #actionButton(class = "back_button", 'jump_back_ToP_taal', vertaler$t("vorige_pagina")),
-           actionButton(class = "button", 'jumpToP_beleggingsdoelstelling', vertaler$t("volgende_pagina")),
-        ),
-        tabPanel(title = "I", value = "panel_beleggingsdoelstelling",
-           #h3(str_c("I. ", vertaler$t("beleggingsdoelstelling"))),
-           #h3("I. ", vertaler$use_js("beleggingsdoelstelling")),
-           h3(tagList("I. ", vertaler$t("beleggingsdoelstelling"))),
-           uiOutput("ui_aanhef_doelstelling"),
-           br(),
-           uiOutput("ui_selectize_beleggingsdoelstelling"),
-           uiOutput("ui_cond_panel_toelichting_doelstelling"),
-           textOutput('error_msg_beleggingsdoelstelling'),
-           actionButton(class = "back_button", 'jump_back_ToP_start', vertaler$t("vorige_pagina")),
-           actionButton(class = "button", 'jumpToP_financiele_situatie', vertaler$t("volgende_pagina"))
-        ),
-        tabPanel(title = "II", value = "panel_financiele_situatie",
-           h3("II. ", vertaler$t("financiele_situatie")),
-           uiOutput("ui_aanhef_financiele_situatie"),
-           uiOutput("ui_selectize_financiele_situatie"),
-           textOutput('error_msg_financiele_situatie'),
-           actionButton(class = "back_button", 'jump_back_ToP_beleggingsdoelstelling', vertaler$t("vorige_pagina")),
-           actionButton(class = "button", 'jumpToP_kennis_ervaring', vertaler$t("volgende_pagina"))
-        ),
-        tabPanel(title = "III", value = "panel_kennis_ervaring",
-           h3("III. ", vertaler$t("kennis_en_ervaring")),
-           uiOutput("ui_selectize_kennis_ervaring"),
-           textOutput('error_msg_kennis_ervaring'),
-           actionButton(class = "back_button", 'jump_back_ToP_financiele_situatie', vertaler$t("vorige_pagina")),
-           actionButton(class = "button", 'jumpToP_risicobereidheid', vertaler$t("volgende_pagina"))
-        ),
-        tabPanel(title = "IV", value = "panel_risicobereidheid",
-           h3("IV. ", vertaler$t("risicobereidheid")),
-           uiOutput("ui_aanhef_risicobereidheid"),
-           uiOutput("ui_selectize_risicobereidheid"),
-           textOutput('error_msg_risicobereidheid'),
-           actionButton(class = "back_button", 'jump_back_ToP_kennis_ervaring', vertaler$t("vorige_pagina")),
-           actionButton(class = "button", 'jumpToP_startvermogen', vertaler$t("volgende_pagina"))
-        ),
-        tabPanel(title = "V", value = "panel_startvermogen",
-           h3("V. ", vertaler$t("startvermogen_en_so")),#Startvermogen en eventuele bijstortingen of onttrekkingen"),
-           br(h5(" ")),
-           uiOutput("ui_input_startvermogen"),
-           textOutput('error_msg_startvermogen'),
-           uiOutput("ui_input_stortingen_onttrekkingen"),
-             fluidRow(
-             column(5,
-             conditionalPanel(
-               condition = "input.keuze_SO == `ja_bijstorten`",
-               uiOutput("ui_input_bijstorting")
-               ),
-             conditionalPanel(
-               condition = "input.keuze_SO == `nee_onttrekken`",
-               uiOutput("ui_input_onttrekking")
-              )
-              )
-            ),
-            actionButton(class = "back_button", 'jump_back_ToP_risicobereidheid', vertaler$t("vorige_pagina")),
-            actionButton(class = "button", 'jumpToP_visuele_keuze1', vertaler$t("volgende_pagina"))
-            ),
-         tabPanel(title = "VI-1", value = "panel_visuele_keuze1",
-            h3("VI-1. ", vertaler$t("visuele_keuze_rd_rm_stap1")), #Visuele keuze Risicodragend/Risicomijdend, stap 1 (van 2)"),
-            p(style = "text-align: justify;", vertaler$t("op_deze_pagina_twee_risicoprofielen")),
-              #"Op deze pagina staan twee risicoprofielen. Voor nadere toelichting bij deze grafieken druk onderaan deze pagina op de knop."),
-            uiOutput("ui_barplot_een_module"),
-            #barplot_een_module_UI(id = "een"),
-            uiOutput("ui_selectize_visuele_keuze1"),
-            textOutput('error_msg_visuele_keuze1'),
-            #volgende om de knoppen op een rijtje te houden
-            div(
-             div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_startvermogen', vertaler$t("vorige_pagina"))),
-             div(style="display: inline-block; width: 205px ;", actionButton(class = "infobutton", inputId = "grafieken_info1", label = vertaler$t("toelichting_grafieken"))),
-                 #Toelichting bij de grafieken")),
-             #volgende button verschijnt pas na opbouw van de plot, wordt in de server gemaakt
-             div(style="display: inline-block; width: 65px ;", uiOutput('ui_jumpToP_visuele_keuze2'))
-             )
-            ),
-        tabPanel(title = "VI-2", value = "panel_visuele_keuze2",
-            h3("VI-2. ", vertaler$t("visuele_keuze_rd_rm_stap2")), #Visuele keuze Risicodragend/Risicomijdend, stap 2 (van 2)"),
-            p(style = "text-align: justify;", vertaler$t("de_keuze_die_u_maakte_staat_in_het_midden")),
-           uiOutput("ui_barplot_twee_module"),
-           uiOutput("ui_selectize_visuele_keuze2"),
-           textOutput('error_msg_visuele_keuze2'),
-           #volgende om de knoppen op een rijtje te houden
-           div(
-             div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_visuele_keuze1', vertaler$t("vorige_pagina"))),
-             div(style="display: inline-block; width: 205px ;", actionButton(class = "infobutton", "grafieken_info2", vertaler$t("toelichting_grafieken"))),
-             #volgende button verschijnt pas na opbouw van de plot, wordt in de server gemaakt
-             div(style="display: inline-block; width: 65px ;", uiOutput('ui_jumpToP_duurzaamheid'))
-            )
-           ),
-        tabPanel(title = "VII", value = "panel_duurzaamheid",
-           h3("VII. ", vertaler$t("duurzaamheid")),
-           p(style = "text-align: justify;", vertaler$t("intro_duurzaamheid")),
-           p(style = "text-align: justify;", vertaler$t("uitleg_duurzaamheid")),
-           p(style = "text-align: justify;", vertaler$t("ba_moet_uitvragen")),
-           uiOutput("ui_selectize_duurzaamheid_1_en_2"),
-           conditionalPanel(
-              #hier ging het fout, tekst van deze conditie moet gelijk zijn voor de verschillende entiteiten
-              condition = "input.duurzaamheid_bavd.includes('belangrijkste nadelige effecten') || input.duurzaamheid_bavd.includes('principal adverse impacts')", # "str_detect(input.duurzaamheid_bavd, `de belangrijkste nadelige effecten`)", #== `moet rekening gehouden worden met de belangrijkste nadelige effecten op duurzaamheidsfactoren zoals hierboven genoemd`",
-              p(style = "text-align: justify;", vertaler$t("duurzame_beleggingen_zijn")),
-              uiOutput("ui_selectize_duurzaamheid_3"),
-              p(style = "text-align: justify;", vertaler$t("eu_taxonomie")),
-              uiOutput("ui_selectize_duurzaamheid_4")
-           ),
-           column(12,
-           textOutput('error_msg_duurzaamheid'),
-           #onderstaand is om de buttons op een lijn te houden en om de volgende pagina knop pas te laten verschijnen als de pagina is geladen
-           div(
-             div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_visuele_keuze2', vertaler$t("vorige_pagina"))),
-             #volgende button verschijnt pas na download, wordt in de server gemaakt
-             div(style="display: inline-block; width: 65px ;", uiOutput('ui_jumpToP_overig'))
-             )
-            )
-          ),
-      tabPanel(title = "VIII", value = "panel_overig",
-             h3("VIII. ", vertaler$t("overig")),
-             p(style = "text-align: justify;", vertaler$t("overige_aspecten_toelichten")),
-             br(),
-             uiOutput("ui_selectize_overig"),
-             uiOutput("ui_cond_panel_toelichting_overig"),
-             textOutput('error_msg_overig'),
-             uiOutput("ui_panel_overig_buttons")
-             # column(12,
-             #        #onderstaand is om de buttons op een lijn te houden en om de volgende pagina knop pas te laten verschijnen als de pagina is geladen
-             #        
-             #        div(
-             #          div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_duurzaamheid', 'Ga terug')),
-             #          #volgende button verschijnt pas na download, wordt in de server gemaakt
-             #          div(style="display: inline-block; width: 65px ;", uiOutput('ui_jumpToP_rapport'))
-             #        )
-             # )
-        ),
-        tabPanel(title = vertaler$t("rapport"), value = "panel_rapport",
-            h3(vertaler$t("belangrijke_informatie")),
-            p(style = "text-align: justify;", vertaler$t("disclaimer")),
-            br(),
-            uiOutput("ui_cond_panel_vraag_opsturen_beleggingsstatuut"),
-            h3(vertaler$t("rapport_maken_en_versturen")),
-            p(style = "text-align: justify;", vertaler$t("als_u_op_onderstaande_knop_klikt")),
-            #onderstaand is om de buttons op een lijn te houden
-            div(
-              div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_overig', vertaler$t("vorige_pagina"))),
-              div(style="display: inline-block; width: 305px ;", actionButton(inputId = "start_rapport", 
-                                                                              label = "------------ OK ------------", #vertaler$t("rapport_maken_en_versturen"),   # or whatever your label is
-                                                                              icon = icon("file-pdf"), 
-                                                                              class = "button")),
-              downloadButton(outputId = "rapport_hidden", "Hidden Download", style = "display: none;"),
-              #volgende button verschijnt pas na download, wordt in de server gemaakt
-              div(style="display: inline-block; width: 65px ;", uiOutput('ui_naar_voorlopige_conclusie'))
-              )
-            )
-         )
+#   
+#   # ==========================================================
+#   # II. FINANCIËLE SITUATIE
+#   # ==========================================================
+  nav_panel(title = "II", value = "panel_financiele_situatie", class = "p-4",
+    card(
+      card_header(h3("II. ", uiOutput("ui_financiele_situatie", inline = TRUE))),
+      card_body(
+        uiOutput("ui_aanhef_financiele_situatie"),
+        uiOutput("ui_selectize_financiele_situatie"),
+        textOutput("error_msg_financiele_situatie")
+      ),
+      card_footer(
+        layout_columns(
+          col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+          uiOutput("ui_jump_back_ToP_beleggingsdoelstelling_button"),
+          NULL,
+          uiOutput("ui_jumpToP_kennis_ervaring_button")
+        )
       )
-  #)
-#}
+    )
+  ),
+#   
+#   # ==========================================================
+#   # III. KENNIS & ERVARING
+#   # ==========================================================
+  nav_panel(title = "III", value = "panel_kennis_ervaring", class = "p-4",
+    card(
+      card_header(h3("III. ", uiOutput("ui_kennis_en_ervaring", inline = TRUE))),
+      card_body(
+        uiOutput("ui_selectize_kennis_ervaring"),
+        textOutput("error_msg_kennis_ervaring")
+      ),
+      card_footer(
+        layout_columns(
+          col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+          uiOutput("ui_jump_back_ToP_financiele_situatie_button"),
+          NULL,
+          uiOutput("ui_jumpToP_risicobereidheid_button")
+        )
+      )
+    )
+  ),
 
-server <- function(input, output, session) {
+  # ==========================================================
+  # IV. RISICOBEREIDHEID
+  # ==========================================================
+  nav_panel(title = "IV", value = "panel_risicobereidheid", class = "p-4",
+    card(
+      card_header(h3("IV. ", uiOutput("ui_risicobereidheid", inline = TRUE))),
+      card_body(
+        uiOutput("ui_aanhef_risicobereidheid"),
+        uiOutput("ui_selectize_risicobereidheid"),
+        textOutput("error_msg_risicobereidheid")
+      ),
+      card_footer(
+        layout_columns(
+          col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+          uiOutput("ui_jump_back_ToP_kennis_ervaring_button"),
+          NULL,
+          uiOutput("ui_jumpToP_startvermogen_button")
+        )
+      )
+    )
+  ),
+#   
+#   # ==========================================================
+#   # V. STARTVERMOGEN / STORTINGEN
+#   # ==========================================================
+  nav_panel(title = "V", value = "panel_startvermogen", class = "p-4",
+    card(
+      card_header(
+        h3("VI-2. ", uiOutput("ui_startvermogen_en_so", inline = TRUE))),
+      card_body(
+        h5(uiOutput("ui_input_startvermogen")),
+        textOutput("error_msg_startvermogen"),
+        h5(uiOutput("ui_input_stortingen_onttrekkingen")),
 
+        fluidRow(
+          column(
+            6,
+            conditionalPanel(
+              condition = "input.keuze_SO == 'ja_bijstorten'",
+              h5(uiOutput("ui_input_bijstorting"))
+            ),
+            conditionalPanel(
+              condition = "input.keuze_SO == 'nee_onttrekken'",
+              h5(uiOutput("ui_input_onttrekking"))
+            )
+          )
+        )
+      ),
+      card_footer(
+        layout_columns(
+          col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+          uiOutput("ui_jump_back_ToP_risicobereidheid_button"),
+          NULL,
+          uiOutput("ui_jumpToP_visuele_keuze1_button")
+        )
+      )
+    )
+  ),
+#   # ==========================================================
+#   # VI-1. Visuele keuze stap 1
+#   # ==========================================================
+nav_panel(title = "VI-1", value = "panel_visuele_keuze1", class = "p-4",
+  card(
+    card_header(
+      h3("VI-1. ", uiOutput("ui_visuele_keuze_rd_rm_stap1", inline = TRUE))),
+    card_body(
+      p(
+        style = "text-align: justify;",
+        h5(uiOutput("ui_op_deze_pagina_twee_risicoprofielen"))
+      ),
+      uiOutput("ui_barplot_een_module"),
+      h5(uiOutput("ui_selectize_visuele_keuze1")),
+      textOutput("error_msg_visuele_keuze1")
+    ),
+    
+    card_footer(
+      layout_columns(
+        col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+        uiOutput("ui_jump_back_ToP_startvermogen_button"),
+        actionButton(
+          "grafieken_info1",
+          uiOutput("ui_toelichting_grafieken_label1", inline = TRUE),
+          class = "infobutton btn-lg"
+        ),
+        uiOutput("ui_jumpToP_visuele_keuze2_button")
+      )
+    )
+  )
+),
+#   # ==========================================================
+#   # VI-2. Visuele keuze stap 2
+#   # ==========================================================
+nav_panel(title = "VI-2", value = "panel_visuele_keuze2",  class = "p-4",
+  card(
+    card_header(
+      h3("VI-2. ", uiOutput("ui_visuele_keuze_rd_rm_stap2", inline = TRUE))),
+    card_body(
+      p(
+        style = "text-align: justify;",
+        h5(uiOutput("ui_de_keuze_die_u_maakte_staat_in_het_midden"))
+      ),
+      uiOutput("ui_barplot_twee_module"),
+      h5(uiOutput("ui_selectize_visuele_keuze2")),
+      textOutput("error_msg_visuele_keuze2")
+    ),
+    
+    card_footer(
+      layout_columns(
+        col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+        uiOutput("ui_jump_back_ToP_visuele_keuze1_button"),
+        actionButton(
+          "grafieken_info2",
+          uiOutput("ui_toelichting_grafieken_label2", inline = TRUE),
+          class = "infobutton btn-lg"
+        ),
+        uiOutput("ui_jumpToP_duurzaamheid_button")
+      )
+    )
+  )
+),
+#   # ==========================================================
+#   # VII. Duurzaamheid
+#   # ==========================================================
+nav_panel(title = "VII", value = "panel_duurzaamheid", class = "p-4",
+        card(
+          card_header(
+            h3("VII. ", uiOutput("ui_duurzaamheid", inline = TRUE))),
+        card_body(
+          h5(uiOutput("ui_intro_duurzaamheid")),
+          h5(uiOutput("ui_uitleg_duurzaamheid")),
+          h5(uiOutput("ui_ba_moet_uitvragen")),
+          uiOutput("ui_selectize_duurzaamheid_1_en_2"),
+          textOutput("error_msg_duurzaamheid"),
+          fluidRow(
+            column(
+              12,
+           conditionalPanel(
+             #hier ging het fout, tekst van deze conditie moet gelijk zijn voor de verschillende entiteiten
+             condition = "input.duurzaamheid_bavd.includes('belangrijkste nadelige effecten') || input.duurzaamheid_bavd.includes('principal adverse impacts')", # "str_detect(input.duurzaamheid_bavd, `de belangrijkste nadelige effecten`)", #== `moet rekening gehouden worden met de belangrijkste nadelige effecten op duurzaamheidsfactoren zoals hierboven genoemd`",
+             style = "width: 100%;",
+             h5(uiOutput("ui_duurzame_beleggingen_zijn")),
+             uiOutput("ui_selectize_duurzaamheid_3"),
+             h5(style = "text-align: justify;", vertaler$t("eu_taxonomie")),
+             uiOutput("ui_selectize_duurzaamheid_4")
+           ))),
+          card_footer(
+            layout_columns(
+              col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+              uiOutput("ui_jump_back_ToP_visuele_keuze2_button"),
+              NULL,
+              uiOutput('ui_jumpToP_overig_button')
+              )
+           )
+          )
+        )
+        ),
+#   # ==========================================================
+#   # VII. Overig
+#   # ==========================================================
+nav_panel(title = "VIII", value = "panel_overig", class = "p-4",
+          card(
+            card_header(
+              h3("VIII. ", uiOutput("ui_overig", inline = TRUE))),
+            card_body(
+              h5(uiOutput("ui_overige_aspecten_toelichten")),
+              h5(uiOutput("ui_selectize_overig")),
+              uiOutput("ui_cond_panel_toelichting_overig"),
+              textOutput('error_msg_overig')
+              ),
+            card_footer(
+              #layout_columns(
+               # col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+                #col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+                uiOutput("ui_panel_overig_buttons")
+              #)
+            )
+            )
+          ),
+#   # ==========================================================
+#   # VII. Rapport
+#   # ==========================================================
+nav_panel(title = uiOutput("ui_tabset_rapport_titel"), value = "panel_rapport", class = "p-4",
+        card(
+          card_header(
+            h3(uiOutput("ui_belangrijke_informatie"))),
+          card_body(
+            h5(uiOutput("ui_disclaimer")),
+            h5(uiOutput("ui_cond_panel_vraag_opsturen_beleggingsstatuut")),
+            h5(uiOutput("ui_rapport_maken_en_versturen")),
+            h5(uiOutput("ui_als_u_op_onderstaande_knop_klikt"))
+          ),
+          card_footer(
+            layout_columns(
+            col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+              uiOutput("ui_jump_back_ToP_overig_button"),
+              uiOutput("ui_start_rapport_button"),
+              uiOutput('ui_naar_voorlopige_conclusie')),
+            downloadButton(outputId = "rapport_hidden", "Hidden Download", style = "display: none;")
+          )
+        )
+    )
+)
+
+ server <- function(input, output, session) {
+# 
   taal <- reactive({
-    #moet zo geinitialiseerd, anders Warning: Error in if: argument is of length zero
     input$taal %||% "nl"  # Use %||% from rlang or purrr, or if (is.null(input$taal)) "nl" else input$taal
   })
-  
+
   output$ui_tabset_taal_titel <- renderUI({
     # vlag afh van taal
     flag <- if (taal() == "en") span("🇬🇧", style = "font-size: 1.75em;") else if (taal() == "nl") span("🇳🇱", style = "font-size: 1.75em;") else ""
-    tagList(
-      flag
-    )
+    tagList(flag)
   })
   
-  format_bedrag_tabellen <- function(bedrag, big_mark, decimal_mark) {
-    paste0(" €", formatC(as.numeric(round(bedrag/1000, 0) * 1000),
-                         format="f", digits=0, big.mark=big_mark(), decimal.mark = decimal_mark()))
-  }
-  #voor bijstorting tot 100 euro nauwkeurig
-  format_bedrag_tabellen_bijstorting <- function(bedrag, big_mark, decimal_mark) {
-    paste0(" €", formatC(as.numeric(round(bedrag/100, 0) * 100),
-                         format="f", digits=0, big.mark=big_mark(), decimal.mark = decimal_mark()))
-  }
-  
+  output$ui_tabset_rapport_titel <- renderUI({taal(); vertaler$t("rapport")})
+
   test_modus <- reactive({
     naam() == "testen"
   })
-  
+
   #===keepAlive voor de teller
   #geen text tonen, alleen maar in een reactive zetten
   output$keepAlive <- reactive({
@@ -493,15 +845,11 @@ server <- function(input, output, session) {
     print(paste("verandering taal:", input$taal))
     shiny.i18n::update_lang(input$taal)
   })
-  
-  big_mark <- reactive({
-    if (taal() == "nl") "." else ","
-  })
-  
-  decimal_mark <- reactive({
-    if (taal() == "nl") "," else "."
-  })
-  
+
+  #====
+  big_mark <- reactive({if (taal() == "nl") "." else ","})
+  decimal_mark <- reactive({if (taal() == "nl") "," else "."})
+
   bedragenInput <- function(inputId, label, value) {
     shinyWidgets::autonumericInput(
       inputId = inputId,
@@ -514,11 +862,36 @@ server <- function(input, output, session) {
       digitGroupSeparator = big_mark(),
       decimalCharacter = decimal_mark(),
       align = "left",
-      width = 800)
+      width = 800,
+      class = "autonum-green")
   }
   
+  format_bedrag_tabellen <- function(bedrag, big_mark, decimal_mark) {
+    paste0(" €", formatC(as.numeric(round(bedrag/1000, 0) * 1000),
+                         format="f", digits=0, big.mark=big_mark(), decimal.mark = decimal_mark()))
+  }
+  #voor bijstorting tot 100 euro nauwkeurig
+  format_bedrag_tabellen_bijstorting <- function(bedrag, big_mark, decimal_mark) {
+    paste0(" €", formatC(as.numeric(round(bedrag/100, 0) * 100),
+                         format="f", digits=0, big.mark=big_mark(), decimal.mark = decimal_mark()))
+  }
+  #====
+
+
   vragen_antwoorden <- reactive({
-    vragen_antwoorden_database(entiteit = input$entiteit, taal = taal())
+    vragen_antwoorden_start <-
+    vragen_antwoorden_start_new %>%
+    filter(entiteit == entiteit(), taal == taal()) %>%
+      select(-entiteit, - taal)
+
+      factor_vragen <-
+        vragen_antwoorden_start %>%
+        select(vraag) %>%
+        unique() %>% pull()
+
+      vragen_antwoorden_start %>%
+        mutate(nummer = as.numeric(factor(vraag, levels = factor_vragen)))
+
   })
 
   max_min_punten_categorie <- function(categorie, min_max) {
@@ -526,6 +899,8 @@ server <- function(input, output, session) {
       filter(antwoord != vertaler$t("maak_keuze"),
              categorie == !!categorie) %>%
       group_by(vraag) %>%
+      # van een tot max, geen nullen
+      filter(punten != 0) %>%
       filter(punten == if(min_max == "max") {max(punten)} else {min(punten)}) %>%
       ungroup() %>%
       summarise(min_of_max = sum(punten)) %>% pull()
@@ -603,32 +978,131 @@ server <- function(input, output, session) {
 
 naam_in_file_en_aanhef <- reactive({
   if(entiteit() %in% c("bv", "st", "ve", "ov")) {
-    naam_entiteit() |> 
-      str_replace("\\([^()]{0,}\\)", "") |> 
-      str_replace("Mevrouw", "Mevr.") |> 
-      str_replace("mevrouw", "mevr.") |> 
-      str_replace("De heer", "Dhr.") |> 
-      str_replace("de heer", "dhr.") |> 
-      str_replace("B.V.", "BV") |> 
-      str_replace("b.v.", "BV") |> 
+    naam_entiteit() |>
+      str_replace("\\([^()]{0,}\\)", "") |>
+      str_replace("Mevrouw", "Mevr.") |>
+      str_replace("mevrouw", "mevr.") |>
+      str_replace("De heer", "Dhr.") |>
+      str_replace("de heer", "dhr.") |>
+      str_replace("B.V.", "BV") |>
+      str_replace("b.v.", "BV") |>
       str_replace("/", "")
   }
   else {
-   naam() |> 
-      str_replace("\\([^()]{0,}\\)", "") |> 
-      str_replace("Mevrouw", "Mevr.") |> 
-      str_replace("mevrouw", "mevr.") |> 
-      str_replace("De heer", "Dhr.") |> 
-      str_replace("de heer", "dhr.") |> 
-      str_replace("B.V.", "BV") |> 
-      str_replace("b.v.", "BV") |> 
+   naam() |>
+      str_replace("\\([^()]{0,}\\)", "") |>
+      str_replace("Mevrouw", "Mevr.") |>
+      str_replace("mevrouw", "mevr.") |>
+      str_replace("De heer", "Dhr.") |>
+      str_replace("de heer", "dhr.") |>
+      str_replace("B.V.", "BV") |>
+      str_replace("b.v.", "BV") |>
       str_replace("/", "")
   }
 })
-output$ui_intro_head <- reactive({vertaler$t("intro_head")})
-output$ui_intro_text <- reactive({vertaler$t("intro_text")})
-output$ui_vul_naam_in <- reactive({vertaler$t("vul_naam_in")})
-output$ui_u_krijgt_rapport_text <- reactive({vertaler$t("u_krijgt_rapport_text")})
+output$ui_intro_head <- renderText({vertaler$t("intro_head")})
+output$ui_intro_text <- renderText({vertaler$t("intro_text")})
+output$ui_vul_naam_in <- renderText({vertaler$t("vul_naam_in")})
+
+
+
+output$ui_vul_taal_in <- renderUI({
+  selectInput(inputId = "taal",
+              label = "English/Nederlands",
+              choices = c(setNames("nl", "Nederlands"),
+                          setNames("en", "English")),
+              selected = "nl")
+})
+
+output$ui_vakje_vul_naam_in <- renderUI({
+  #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
+  #tagQuery(
+    textInput(inputId = "naam",
+               value = "testen",
+              placeholder = "...",
+              label = vertaler$t("uw_naam"),
+              width = '750px')#)$find("input")$addAttrs(autocomplete = "off")$allTags()
+})
+
+output$ui_vraag_emailadres <- renderUI({
+  req(test_modus())
+  #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
+ # tagQuery(
+    textInput(inputId = "emailadres",
+              value = if(test_modus()) {"pieterprins@yahoo.com"} else {""},
+              placeholder = vertaler$t("email_placeholder"),
+              label = vertaler$t("uw_emailadressen"),
+              width = '750px')#)$find("input")$addAttrs(autocomplete = "off")$allTags()
+})
+output$ui_u_krijgt_rapport_text <- renderText({vertaler$t("u_krijgt_rapport_text")})
+
+#Knoppen
+output$ui_toelichting_grafieken_label1 <- renderText({taal(); vertaler$t("toelichting_grafieken")})
+output$ui_toelichting_grafieken_label2 <- renderText({taal(); vertaler$t("toelichting_grafieken")})
+
+output$ui_jumpToP_start_button <- renderUI({taal(); actionButton("jumpToP_start", "Start", class = "button btn-lg")}) #vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_beleggingsdoelstelling_button <- renderUI({taal(); actionButton("jumpToP_beleggingsdoelstelling", vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_financiele_situatie_button <- renderUI({taal(); actionButton("jumpToP_financiele_situatie", vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_kennis_ervaring_button <- renderUI({taal(); actionButton("jumpToP_kennis_ervaring", vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_risicobereidheid_button <- renderUI({taal(); actionButton("jumpToP_risicobereidheid", vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_startvermogen_button <- renderUI({taal(); actionButton("jumpToP_startvermogen", vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_visuele_keuze1_button <- renderUI({taal(); actionButton("jumpToP_visuele_keuze1", vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_visuele_keuze2_button <- renderUI({taal(); actionButton("jumpToP_visuele_keuze2", vertaler$t("volgende_pagina"), class = "button btn-lg")})
+output$ui_jumpToP_duurzaamheid_button <- renderUI({actionButton(class = "button", 'jumpToP_duurzaamheid', vertaler$t("volgende_pagina"))})
+output$ui_jumpToP_private_beleggingen <- renderUI({actionButton(class = "button", 'jumpToP_private_beleggingen', vertaler$t("volgende_pagina"))})
+output$ui_jumpToP_rapport_button <- renderUI({actionButton(class = "button", 'jumpToP_rapport', vertaler$t("volgende_pagina"))})
+output$ui_jumpToP_overig_button <- renderUI({actionButton(class = "button", 'jumpToP_overig', vertaler$t("volgende_pagina"))})
+output$ui_jumpToP_overig <- renderUI({actionButton(class = "button", 'jumpToP_overig', vertaler$t("volgende_pagina"))})
+# output$ui_jumpToP_taal <- renderUI({actionButton(class = "werk_button", 'jumpToP_taal', vertaler$t("volgende_pagina"))})
+
+output$ui_jump_back_ToP_taal_button <- renderUI({taal(); actionButton("jumpToP_taal", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_start_button <- renderUI({taal(); actionButton("jumpToP_start", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_beleggingsdoelstelling_button <- renderUI({taal(); actionButton("jumpToP_beleggingsdoelstelling", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_financiele_situatie_button <- renderUI({taal(); actionButton("jumpToP_financiele_situatie", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_kennis_ervaring_button <- renderUI({taal(); actionButton("jumpToP_kennis_ervaring", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_risicobereidheid_button <- renderUI({taal(); actionButton("jumpToP_risicobereidheid", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_startvermogen_button <- renderUI({taal(); actionButton("jumpToP_startvermogen", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_visuele_keuze1_button <- renderUI({taal(); actionButton("jumpToP_visuele_keuze1", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_visuele_keuze2_button <- renderUI({taal(); actionButton("jumpToP_visuele_keuze2", vertaler$t("vorige_pagina"), class = "back_button")})
+output$ui_jump_back_ToP_duurzaamheid_button <- renderUI({actionButton(class = "back_button", 'jumpToP_duurzaamheid', vertaler$t("vorige_pagina"))})
+output$ui_jump_back_ToP_private_beleggingen <- renderUI({actionButton(class = "back_button", 'jumpToP_private_beleggingen', vertaler$t("vorige_pagina"))})
+output$ui_jump_back_ToP_rapport_button <- renderUI({actionButton(class = "back_button", 'jumpToP_rapport', vertaler$t("vorige_pagina"))})
+output$ui_jump_back_ToP_overig_button <- renderUI({actionButton(class = "back_button", 'jumpToP_overig', vertaler$t("vorige_pagina"))})
+output$ui_jump_back_ToP_overig <- renderUI({actionButton(class = "back_button", 'jumpToP_overig', vertaler$t("vorige_pagina"))})
+
+
+output$ui_start_rapport_button <- renderUI({actionButton(inputId = "start_rapport", label = vertaler$t("rapport_maken_en_versturen") , icon = icon("file-pdf"), class = "button")})
+
+#===
+
+
+#Aanhef van tabs
+output$ui_beleggingsdoelstelling <- renderText({vertaler$t("beleggingsdoelstelling")})
+output$ui_financiele_situatie <- renderText({vertaler$t("financiele_situatie")})
+output$ui_risicobereidheid <- renderText({vertaler$t("risicobereidheid")})
+output$ui_kennis_en_ervaring <- renderText({vertaler$t("kennis_en_ervaring")})
+output$ui_startvermogen_en_so <- renderText({vertaler$t("startvermogen_en_so")})
+output$ui_visuele_keuze_rd_rm_stap1 <- renderText({vertaler$t("visuele_keuze_rd_rm_stap1")})
+output$ui_visuele_keuze_rd_rm_stap2 <- renderText({vertaler$t("visuele_keuze_rd_rm_stap2")})
+output$ui_duurzaamheid <- renderText({vertaler$t("duurzaamheid")})
+output$ui_overig <- renderText({vertaler$t("overig")})
+output$ui_belangrijke_informatie <- renderText({vertaler$t("belangrijke_informatie")})
+
+output$ui_op_deze_pagina_twee_risicoprofielen <- renderText(vertaler$t("op_deze_pagina_twee_risicoprofielen"))
+output$ui_de_keuze_die_u_maakte_staat_in_het_midden <- renderText(vertaler$t("de_keuze_die_u_maakte_staat_in_het_midden"))
+
+output$ui_intro_duurzaamheid <- renderText({vertaler$t("intro_duurzaamheid")})
+output$ui_uitleg_duurzaamheid <- renderText({vertaler$t("uitleg_duurzaamheid")})
+output$ui_ba_moet_uitvragen <- renderText({vertaler$t("ba_moet_uitvragen")})
+output$ui_duurzame_beleggingen_zijn <- renderText({vertaler$t("duurzame_beleggingen_zijn")})
+
+output$ui_overige_aspecten_toelichten <- renderText({vertaler$t("overige_aspecten_toelichten")})
+
+output$ui_rapport_maken_en_versturen <- renderText(vertaler$t("rapport_maken_en_versturen"))
+
+output$ui_als_u_op_onderstaande_knop_klikt <- renderText(vertaler$t("als_u_op_onderstaande_knop_klikt"))
+
+output$ui_disclaimer <- renderText(vertaler$t("disclaimer"))
 
 output$ui_private_beleggingen <- reactive({vertaler$t("private_beleggingen")})
 output$ui_private_beleggingen_zijn_intro <- reactive({vertaler$t("private_beleggingen_zijn_intro")})
@@ -641,29 +1115,13 @@ output$ui_private_beleggingen_mogelijk_geschikt <- reactive({vertaler$t("private
 output$ui_private_beleggingen_bavd_kan_helpen <- reactive({vertaler$t("private_beleggingen_bavd_kan_helpen")})
 output$ui_hieronder_vraag_interesse_private_beleggingen <- reactive({vertaler$t("hieronder_vraag_interesse_private_beleggingen")})
 
-output$ui_vul_taal_in <- renderUI({
-  selectInput(inputId = "taal",
-              label = "English/Nederlands",
-              choices = c(setNames("nl", "Nederlands"),
-                          setNames("en", "English")),
-              selected = "nl")
-})
-
-output$ui_vraag_emailadres <- renderUI({
-  #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
-  tagQuery(textInput(inputId = "emailadres", 
-                     value = if(test_modus()) {"pieterprins@yahoo.com"} else {""}, 
-                     placeholder = vertaler$t("email_placeholder"), 
-                     label = vertaler$t("uw_emailadressen"),
-                     width = '500px'))$find("input")$addAttrs(autocomplete = "off")$allTags()
-})
 
 output$ui_intro_vraag_entiteit <- reactive({vertaler$t("intro_vraag_entiteit")})
 
 output$ui_vraag_entiteit <- renderUI({
-  #req(test_modus())  # Ensures test_modus() exists before using it
+  req(test_modus())  # Ensures test_modus() exists before using it
   selectInput(inputId = "entiteit",
-              choices = c(vertaler$t("maak_keuze"), 
+              choices = c(vertaler$t("maak_keuze"),
                           #Maak hieronder een keuze",
                           setNames("prive", vertaler$t("prive")),
                           setNames("enof", vertaler$t("enof")),
@@ -672,21 +1130,20 @@ output$ui_vraag_entiteit <- renderUI({
                           setNames("st", vertaler$t("st")),
                           setNames("ov", vertaler$t("ov"))),
               selected = if(test_modus()) {"prive"} else {""},
-              #label = "Voor wie vult u dit formulier in?",
               label = vertaler$t("voor_wie"),
-              width = '500px')
+              width = '750px')
 })
 
 output$ui_vraag_naam_entiteit <- renderUI({
   req(entiteit())
   if(entiteit() %in% c("bv", "st", "ve", "ov")) {
     p(
-      h4(paste(vertaler$t("wat_is_de_naam_van"), de_org_aanduiding(), "?")),
+      h5(paste(vertaler$t("wat_is_de_naam_van"), de_org_aanduiding(), "?")),
       #paste voor een spatie
       #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
       tagQuery(textInput("naam_entiteit", value = "...",
-                          label = paste(vertaler$t("de_naam_van"), de_org_aanduiding()), 
-                          width = '400px'))$find("input")$addAttrs(autocomplete = "off")$allTags()
+                          label = paste(vertaler$t("de_naam_van"), de_org_aanduiding()),
+                          width = '750px'))$find("input")$addAttrs(autocomplete = "off")$allTags()
     )
   }
 })
@@ -695,28 +1152,28 @@ output$ui_vraag_naam_entiteit <- renderUI({
 output$ui_vraag_beleggingsstatuut <- renderUI({
   req(entiteit())
   if(entiteit() %in% c("st", "ve", "ov")) {
-    p(h4(paste(vertaler$t("intro_pensioenbrief1"), de_org_aanduiding(), vertaler$t("intro_pensioenbrief2"), vertaler$t("intro_pensioenbrief3"))), #,
-              selectizeInput(inputId = "beleggingsstatuut", 
-                     label = paste(vertaler$t("heeft"), de_org_aanduiding(), vertaler$t("een_beleggingsstatuut")), 
-                     choices = c(vertaler$t("maak_keuze"), 
-                                 setNames("ja_beleggingsstatuut", paste(vertaler$t("ja"), de_org_aanduiding(), vertaler$t("heeft_beleggingsstatuut"))), 
+    p(h5(paste(vertaler$t("intro_pensioenbrief1"), de_org_aanduiding(), vertaler$t("intro_pensioenbrief2"), vertaler$t("intro_pensioenbrief3"))), #,
+              selectizeInput(inputId = "beleggingsstatuut",
+                     label = paste(vertaler$t("heeft"), de_org_aanduiding(), vertaler$t("een_beleggingsstatuut")),
+                     choices = c(vertaler$t("maak_keuze"),
+                                 setNames("ja_beleggingsstatuut", paste(vertaler$t("ja"), de_org_aanduiding(), vertaler$t("heeft_beleggingsstatuut"))),
                                  setNames("nee_beleggingsstatuut", paste(vertaler$t("nee"), de_org_aanduiding(), vertaler$t("heeft_geen_beleggingsstatuut")))),
                      selected = vertaler$t("maak_keuze"),#Maak hieronder een keuze:",
-                     width = "400px")
+                     width = "750px")
     )
   } else if (entiteit() == "bv") {
       #p(h4(str_c("Indien de besloten vennootschap een pensioenbrief heeft, kunt u dit mogelijk gebruiken bij het invullen van dit beleggersprofiel.")),
-      p(h4(str_c(vertaler$t("intro_pensioenbrief_bv"))),
-                     selectizeInput(inputId = "pensioenbrief", 
-                     label = vertaler$t("heeft_bv_pensioenbrief"), 
-                     choices = c(vertaler$t("maak_keuze"), 
-                                 setNames("ja_pensioenbrief", str_c(vertaler$t("bv_heeft_pensioenbrief"))), #Ja, de besloten vennootschap heeft een pensioenbrief")), 
+      p(h5(str_c(vertaler$t("intro_pensioenbrief_bv"))),
+              selectizeInput(inputId = "pensioenbrief",
+                     label = vertaler$t("heeft_bv_pensioenbrief"),
+                     choices = c(vertaler$t("maak_keuze"),
+                                 setNames("ja_pensioenbrief", str_c(vertaler$t("bv_heeft_pensioenbrief"))), #Ja, de besloten vennootschap heeft een pensioenbrief")),
                                  setNames("nee_pensioenbrief", vertaler$t("bv_heeft_geen_pensioenbrief"))),
                      selected = vertaler$t("maak_keuze"),#Maak hieronder een keuze:",
-                     width = "400px")
+                     width = "750px")
     )
     }
-  }) 
+  })
 
   output$ui_cond_panel_vraag_opsturen_beleggingsstatuut <- renderUI({
     if (input$entiteit%in% c("st", "ve", "ov")) {
@@ -736,7 +1193,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
         )
       } else {NULL}
     })
-  
+
   #UI element in de server
   #=== aanhef vragen entiteitsspecifiek
   output$ui_aanhef_doelstelling <- renderPrint({
@@ -756,39 +1213,39 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       )
     }
   })
-  
+
   #nadere toelichting overig box
   output$ui_cond_panel_toelichting_overig <- renderUI({
     conditionalPanel(
       condition = "input.overig.includes('graag') || input.overig.includes('please')",
     list(
       #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
-      tagQuery(
-      textInput(inputId = "overig_toelichting", 
+      h5(
+        tagQuery(
+      textInput(inputId = "overig_toelichting",
                 label = vertaler$t("hier_nader_toelichten"),
                 value = "...", width = '6500px',
                 placeholder = "..."))$find("input")$addAttrs(autocomplete = "off")$allTags()
+      )
      )
     )
   })
   
   output$ui_panel_overig_buttons <- renderUI({
-    column(12,
-           #onderstaand is om de buttons op een lijn te houden en om de volgende pagina knop pas te laten verschijnen als de pagina is geladen
-           if(private_beleggingen_uitvragen() == TRUE) 
-           {div(
-             div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_private_beleggingen', vertaler$t("vorige_pagina"))),
-             #volgende button verschijnt pas na download, wordt in de server gemaakt
-             div(style="display: inline-block; width: 65px ;", uiOutput('ui_jumpToP_rapport'))
-           )} else
-           {div(
-             div(style="display: inline-block; width: 95px ;", actionButton(class = "back_button", 'jump_back_ToP_duurzaamheid', vertaler$t("vorige_pagina"))),
-             #volgende button verschijnt pas na download, wordt in de server gemaakt
-             div(style="display: inline-block; width: 65px ;", uiOutput('ui_jumpToP_rapport'))
-           )}
+    prev_button <- if (isTRUE(private_beleggingen_uitvragen())) {
+      actionButton("jump_back_ToP_private_beleggingen", vertaler$t("vorige_pagina"), class = "back_button")
+    } else {
+      actionButton("jump_back_ToP_duurzaamheid", vertaler$t("vorige_pagina"), class = "back_button")
+    }
+    
+    layout_columns(
+      col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+        prev_button,
+        NULL,
+        uiOutput("ui_jumpToP_rapport_button")
     )
   })
-  
+
   #nadere toelichting doelstelling box
   output$ui_cond_panel_toelichting_doelstelling <- renderUI({
       conditionalPanel(
@@ -796,18 +1253,20 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
         #condition = "input.beleggingsdoelstelling_toelichting == `ja graag - hieronder opent een tekstvakje waarin u een toelichting kunt schrijven`",
         list(
           #met autocomplete uitzetten, anders worden eerder ingevulde namen getoond
-          tagQuery(
-          textInput(inputId = "doel_toelichting1", 
+          h5(
+            tagQuery(
+              textInput(inputId = "doel_toelichting1",
                     label = if(entiteit() %in% c("bv", "st", "ve", "ov")) {
                           paste(vertaler$t("beleggingsdoelstelling_org_toelichten"), de_org_aanduiding(), vertaler$t("nader_toelichten"))
                       } else {vertaler$t("hier_kunt_u_beleggingsdoelstelling_nader_toelichten")},
-                    value = "...", 
+                    value = "...",
                     width = '6500px',
                     placeholder = "..."))$find("input")$addAttrs(autocomplete = "off")$allTags()
           )
+          )
         )
   })
-  
+
   output$ui_input_startvermogen <- renderUI({
     fluidRow(
       column(5,
@@ -823,29 +1282,29 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
            shinyWidgets::radioGroupButtons(
              inputId = "keuze_SO",
              label = str_c("2) ", vertaler$t("vraag_periodieke_so")),
-             choices = c(vertaler$t("nee_zonder_komma"), 
-                         setNames("ja_bijstorten", (vertaler$t("jaarlijks_bijstorten"))), 
+             choices = c(vertaler$t("nee_zonder_komma"),
+                         setNames("ja_bijstorten", (vertaler$t("jaarlijks_bijstorten"))),
                          setNames("nee_onttrekken", (vertaler$t("jaarlijks_onttrekken")))
              ),
              justified = TRUE,
              status = "neutraal",
              width = 800)))
   })
-  
+
   output$ui_input_bijstorting <- renderUI({
      bedragenInput(inputId = "bijstorting", label = vertaler$t("hoe_groot_bijstorting"), value = 0)
   })
   output$ui_input_onttrekking <- renderUI({
     bedragenInput(inputId = "onttrekking", label = vertaler$t("hoe_groot_onttrekking"), value = 0)
   })
-  
+
   # #=== aanhef vragen financiele_situatie
   output$ui_aanhef_financiele_situatie <- renderPrint({
     if(entiteit() %in% c("bv", "st", "ve", "ov")) {
       p(
         h4(paste(vertaler$t("doel_volgende_vragen_indruk_mate_waarin"), de_org_aanduiding()), tags$b(vertaler$t("kan")),
            paste(vertaler$t("met_de_beleggingen_risico")), vertaler$t("lopen_gezien_de_financiele_situatie"),
-              paste(vertaler$t("volgende_pagina_aangeven_in_hoeverre"), de_org_aanduiding()), tags$b(vertaler$t("bereid_is")), 
+              paste(vertaler$t("volgende_pagina_aangeven_in_hoeverre"), de_org_aanduiding()), tags$b(vertaler$t("bereid_is")),
               vertaler$t("beleggingsrisico_te_nemen"))
       )
     } else {
@@ -853,10 +1312,10 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
         h4(paste(vertaler$t("doel_volgende_vragen_indruk_mate_waarin_u")), tags$b(vertaler$t("kunt")), vertaler$t("lopen_gezien_de_financiele_situatie_op_de_volgende_pagina"),
            tags$b(vertaler$t("wilt")), vertaler$t("nemen"))
         )
-      
+
     }
   })
-  
+
   #=== aanhef vragen risicobereidheid
   output$ui_aanhef_risicobereidheid <- renderUI({
     if(entiteit() %in% c("bv", "st", "ve", "ov")) {
@@ -875,12 +1334,15 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
 
   #== UI is afh van keuze database, dat is op te lossen met renderUI in de server
   selectizeInput01 <- function(id = 1) {
-    selectizeInput(
+    h5(
+      style = "margin-top: 0rem; margin-bottom: 0rem; line-height: 1.3;",  # ← adjust these values
+      selectizeInput(
       inputId = onderwerp_vraag(id),
       label = str_c(sub_nummer_vraag(id), ") ", vraag(id)),
       choices = opties_vraag(id),
       selected = if(test_modus()) {selected_vraag(id)} else {NULL},
-      width = '6500px')
+      width = '100%')
+    )
   }
 
   #aparte voor visuele keuzes 1 en 2, met Setnames voor meerdere talen
@@ -905,8 +1367,8 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                    width = '600px'
     )
   })
-  
-  
+
+
   output$ui_selectize_beleggingsdoelstelling <- renderUI ({
     tagList(map(vraagnummers_categorie("beleggingsdoelstelling"), selectizeInput01))
   })
@@ -922,7 +1384,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   output$ui_selectize_risicobereidheid <- renderUI ({
     tagList(map(vraagnummers_categorie("risicobereidheid"), selectizeInput01))
   })
-  
+
   output$ui_barplot_een_module <- renderUI ({
     barplot_een_module_UI(id = "een", vertaler = vertaler)
   })
@@ -930,26 +1392,8 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     barplot_twee_module_UI(id = "twee", vertaler = vertaler)
   })
 
-  #de volgende knoppen moeten pas verschijnen na de plot
-  #daarom hier in de server gedefinieerd
-  output$ui_jumpToP_visuele_keuze2 <- renderUI ({
-    actionButton(class = "button", 'jumpToP_visuele_keuze2', vertaler$t("volgende_pagina"))
-  })
-  output$ui_jumpToP_duurzaamheid <- renderUI ({
-    actionButton(class = "button", 'jumpToP_duurzaamheid', vertaler$t("volgende_pagina"))
-  })
-  output$ui_jumpToP_private_beleggingen <- renderUI ({
-    actionButton(class = "button", 'jumpToP_private_beleggingen', vertaler$t("volgende_pagina"))
-  })
-  output$ui_jumpToP_rapport <- renderUI ({
-    actionButton(class = "button", 'jumpToP_rapport', vertaler$t("volgende_pagina"))
-  })
-  output$ui_jumpToP_overig <- renderUI ({
-    actionButton(class = "button", 'jumpToP_overig', vertaler$t("volgende_pagina"))
-  })
-  #===
-
   
+
   output$ui_selectize_duurzaamheid_1_en_2 <- renderUI ({
     tagList(map(vraagnummers_categorie("duurzaamheid")[1:2], selectizeInput01))
   })
@@ -962,7 +1406,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   output$ui_selectize_private_beleggingen <- renderUI ({
     tagList(map(vraagnummers_categorie("private_beleggingen"), selectizeInput01))
   })
-  output$ui_naar_voorlopige_conclusie <- renderUI (expr = if (download$aantal_downloads > 0) { 
+  output$ui_naar_voorlopige_conclusie <- renderUI (expr = if (download$aantal_downloads > 0) {
     #download$aantal_downloads is een tellertje met het aantal malen dat download is gegenereerd
     actionButton(class = "werk_button", 'jumpToP_voorlopige_conclusie', label = vertaler$t("voorlopige_conclusie"))
   } else {
@@ -997,27 +1441,22 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   #pmap(panels, panel_uitschakelen)
   #mislukt
 
-   alle_panels_uitschakelen <- function() {
-    #alles uitschakelen, weer inschakelen na invullen (JumpTo etc) per ingevulde pagina
-     shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_start"]')
-    #
-     shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_beleggingsdoelstelling"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_financiele_situatie"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_kennis_ervaring"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_risicobereidheid"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_startvermogen"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_visuele_keuze1"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_visuele_keuze2"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_duurzaamheid"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_private_beleggingen"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_rapport"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_voorlopige_conclusie"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_tabel"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_overig"]')
-    shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_projecties"]')
+  alle_panels_uitschakelen <- function() {
+    panels <- c("panel_taal", "panel_start", "panel_beleggingsdoelstelling", "panel_financiele_situatie",
+                "panel_kennis_ervaring", "panel_risicobereidheid", "panel_startvermogen",
+                "panel_visuele_keuze1", "panel_visuele_keuze2", "panel_duurzaamheid",
+                "panel_overig", "panel_rapport", "panel_voorlopige_conclusie",
+                "panel_projecties", "panel_tabel")
+
+    for (p in panels) {
+      shinyjs::disable(selector = sprintf('.navbar-nav a[data-value = "%s"]', p))
+    }
   }
-  #alle panels uitschakelen - deze functie ook doen bij "Opnieuw beginnen"
+
+  # Call at startup
   alle_panels_uitschakelen()
+
+  thematic::thematic_shiny()
 
   #past ggplot aan aan overall theme
   thematic::thematic_shiny()
@@ -1025,7 +1464,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   #==== back_buttons
   my_backbutton_observeEvent <- function(panel) {
     observeEvent(input[[paste0("jump_back_ToP_", panel)]], {
-      updateTabsetPanel(session, inputId = "tabset",
+      updateNavbarPage(session, inputId = "tabset",
                         selected = str_c("panel_", panel))
     })
   }
@@ -1038,7 +1477,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     updateTabsetPanel(session, inputId = "tabset",
                       selected = "panel_start")
   })
-  
+
   observeEvent(input$jumpToP_taal, {
       #drie tabs met de resultaten weer disablen, private beleggingen idem
     shinyjs::disable(selector = '.navbar-nav a[data-value = "panel_private_beleggingen"]')
@@ -1077,9 +1516,9 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
           {shiny::need(input$naam_entiteit != '...', paste(vertaler$t("de_naam_van"), de_org_aanduiding()))},
          #paste vanwege de spatie
          #bij bv, st of ve of ov moet een antwoord gegeven worden op de vraag over het bel statuut
-        if(input$entiteit %in% c("st", "ve", "ov")) 
+        if(input$entiteit %in% c("st", "ve", "ov"))
           {shiny::need(input$beleggingsstatuut != vertaler$t("maak_keuze"), vertaler$t("maak_een_keuze"))},
-        if(input$entiteit %in% c("bv")) 
+        if(input$entiteit %in% c("bv"))
           {shiny::need(input$pensioenbrief != vertaler$t("maak_keuze"), vertaler$t("maak_een_keuze"))}
       )
     })
@@ -1227,59 +1666,120 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   })
 
   #===
-  
+
   private_beleggingen_tab_geopend <- reactiveValues()
   private_beleggingen_tab_geopend$geopend <- 0
-  
+
   observeEvent(input$jumpToP_overig, {
-  
-      output$error_msg_duurzaamheid <- renderText({
-        if(meer_vragen_duurzaamheid()) {
-          validate_need_functie("duurzaamheid") #alle vier vragen
-        } else { #slechts twee vragen
-          shiny::validate(
-            shiny::need(!opties_vraag(vraagnummers_categorie("duurzaamheid")[1])[1] %in%
-                          c(eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[1])))),
-                            eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[2]))))),
-                        vertaler$t("maak_keuze_alle_bovenstaande_vragen")))
-        }
-      })
-      if(meer_vragen_duurzaamheid()) {
-        req_functie("duurzaamheid") #alle vier vragen
-      } else { #slechts twee vragen
-        shiny::req(!opties_vraag(vraagnummers_categorie("duurzaamheid")[1])[1] %in%
-                     c(eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[1])))),
-                       eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[2]))))))
+    # --- helper: safely get selected input for duurzaamheid ---
+    selected_duurzaamheid <- function(i) {
+      input[[onderwerp_vraag(vraagnummers_categorie("duurzaamheid")[i])]]
+    }
+    
+    # --- ERROR MESSAGE ---
+    output$error_msg_duurzaamheid <- renderText({
+      if (meer_vragen_duurzaamheid()) {
+        validate_need_functie("duurzaamheid")
+      } else {
+        verboden_optie <- opties_vraag(
+          vraagnummers_categorie("duurzaamheid")[1]
+        )[1]
+        gekozen <- c(
+          selected_duurzaamheid(1),
+          selected_duurzaamheid(2)
+        )
+        shiny::validate(
+          shiny::need(
+            !verboden_optie %in% gekozen,
+            vertaler$t("maak_keuze_alle_bovenstaande_vragen")
+          )
+        )
       }
-      #shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_overig"]')
-      #updateTabsetPanel(session, inputId = "tabset", selected = "panel_overig")
       
-      if (private_beleggingen_uitvragen() == TRUE & private_beleggingen_tab_geopend$geopend == 0) {
-         insertTab(inputId = "tabset",
-                  tabPanel(title = span("Extra" , class = "custom2-tab"), value = "panel_private_beleggingen",
-                           h3(uiOutput("ui_private_beleggingen")),
-                           p(uiOutput("ui_private_beleggingen_zijn_intro")),
-                           p(uiOutput("ui_private_beleggingen_zijn_heel_divers")),
-                           p(uiOutput("ui_private_beleggingen_voordelen")),
-                           p(uiOutput("ui_private_beleggingen_nadelen")),
-                           p(uiOutput("ui_private_beleggingen_kosten")),
-                           p(uiOutput("ui_private_beleggingen_duidelijkheid_horizon")),
-                           p(uiOutput("ui_private_beleggingen_mogelijk_geschikt")),
-                           p(uiOutput("ui_private_beleggingen_bavd_kan_helpen")),
-                           p(uiOutput("ui_hieronder_vraag_interesse_private_beleggingen")),
-                           uiOutput("ui_selectize_private_beleggingen"),
-                           textOutput('error_msg_private_beleggingen'),
-                           actionButton(class = "back_button", 'jump_back_ToP_duurzaamheid', vertaler$t("vorige_pagina")),
-                           actionButton(class = "button", 'jumpToP_overig2', vertaler$t("volgende_pagina"))
-                  ),
-                           target = "panel_duurzaamheid", position = "after",
-                           select = TRUE, session = getDefaultReactiveDomain()
-                  )
-        private_beleggingen_tab_geopend$geopend <- 1
-      }
-      if(private_beleggingen_uitvragen() == TRUE) {shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_private_beleggingen"]')} 
-      else {shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_overig"]')}
-      updateTabsetPanel(session, inputId = "tabset", selected = if(private_beleggingen_uitvragen() == TRUE) {"panel_private_beleggingen"} else {"panel_overig"})
+      ""
+    })
+    
+    # --- HARD BLOCKING VALIDATION ---
+    if (meer_vragen_duurzaamheid()) {
+      req_functie("duurzaamheid")
+    } else {
+      verboden_optie <- opties_vraag(
+        vraagnummers_categorie("duurzaamheid")[1]
+      )[1]
+      gekozen <- c(
+        selected_duurzaamheid(1),
+        selected_duurzaamheid(2)
+      )
+      shiny::req(!verboden_optie %in% gekozen)
+    }
+    
+    # --- INSERT PRIVATE BELEGGINGEN TAB (ONCE) ---
+    if (
+      isTRUE(private_beleggingen_uitvragen()) &&
+      private_beleggingen_tab_geopend$geopend == 0
+    ) {
+      
+      bslib::nav_insert(
+        id  = "tabset",
+        target  = "panel_duurzaamheid",
+        position = "after",
+        session = session,
+        nav_panel(title = "Extra", value = "panel_private_beleggingen", class = "p-4",
+        card(
+            card_header(
+              h3(uiOutput("ui_private_beleggingen"))
+            ),
+           card_body(
+              h5(uiOutput("ui_private_beleggingen_zijn_intro")),
+              h5(uiOutput("ui_private_beleggingen_zijn_heel_divers")),
+              h5(uiOutput("ui_private_beleggingen_voordelen")),
+              h5(uiOutput("ui_private_beleggingen_nadelen")),
+              h5(uiOutput("ui_private_beleggingen_kosten")),
+              h5(uiOutput("ui_private_beleggingen_duidelijkheid_horizon")),
+              h5(uiOutput("ui_private_beleggingen_mogelijk_geschikt")),
+              h5(uiOutput("ui_private_beleggingen_bavd_kan_helpen")),
+              h5(uiOutput("ui_hieronder_vraag_interesse_private_beleggingen")),
+              uiOutput("ui_selectize_private_beleggingen"),
+              textOutput("error_msg_private_beleggingen")
+            ),
+           card_footer(
+             layout_columns(
+               col_widths = breakpoints(sm = c(12, 12, 12), md = c(3, 6, 3)),
+                actionButton("jump_back_ToP_duurzaamheid", vertaler$t("vorige_pagina"), class = "back_button"),
+               NULL,
+                actionButton("jumpToP_overig2", vertaler$t("volgende_pagina"), class = "button")
+              )
+           )
+            )
+          )
+        )
+    }
+      private_beleggingen_tab_geopend$geopend <- 1
+    
+    
+    # --- NAVIGATE (bslib-style) ---
+    if (isTRUE(private_beleggingen_uitvragen())) {
+      shinyjs::enable(
+        selector = '.nav-link[data-value="panel_private_beleggingen"]'
+      )
+      bslib::nav_select(
+        id = "tabset",
+        selected = "panel_private_beleggingen",
+        session = session
+      )
+      
+    } else {
+      
+      shinyjs::enable(
+        selector = '.nav-link[data-value="panel_overig"]'
+      )
+      
+      bslib::nav_select(
+        id = "tabset",
+        selected = "panel_overig",
+        session = session
+      )
+    }
   })
   
   observeEvent(input$jumpToP_overig2, {
@@ -1289,7 +1789,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     req_functie("private_beleggingen")
       shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_overig"]')
       updateTabsetPanel(session, inputId = "tabset", selected = "panel_overig")
-  }) 
+  })
   #===
   observeEvent(input$jumpToP_rapport, {
     output$error_msg_overig <- renderText({
@@ -1299,63 +1799,221 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_rapport"]')
     updateTabsetPanel(session, inputId = "tabset", selected = "panel_rapport")
   })
-  
+
   #========
-  
+
   geklikt_op_voorlopige_conclusie <- reactiveValues()
   geklikt_op_voorlopige_conclusie$geklikt <- 0
 
   observeEvent(input$jumpToP_voorlopige_conclusie, {
     if (geklikt_op_voorlopige_conclusie$geklikt == 0) {
-      insertTab(inputId = "tabset",
-           tabPanel(title = span(vertaler$t("voorlopige_conclusie"), class = "custom-tab"), value = "panel_voorlopige_conclusie",
-             h3(vertaler$t("resultaat_per_categorie")),
-             actionButton(class = "back_button", 'jump_back_ToP_rapport', vertaler$t("vorige_pagina")),
-             actionButton(class = "werk_button", 'jumpToP_projecties', vertaler$t("projecties")),
-             shinycssloaders::withSpinner(
-               p(style = "text-align: justify;", htmlOutput("check_pagina")),
-               color = euroblue, #kleur van spinner
-             ),
-             h4(textOutput('profiel_conclusie_tekst')),
-             h4(vertaler$t("vertaling_punten_naar_profiel_uitleg")),
-             # Vertaling punten naar profiel per categorie: het te behalen aantal punten boven het minimale aantal punten
-             # wordt in vijf gelijke delen gesplitst. Het behaalde aantal punten valt in een van die vijf gebieden, die corresponderen met een profiel."),
-             p(style = "text-align: justify;gap: 50px;",
-               htmlOutput("vertaaltabel_beleggingsdoelstelling"),
-               htmlOutput("vertaaltabel_financiele_situatie"),
-               htmlOutput("vertaaltabel_risicobereidheid"),
-               htmlOutput("vertaaltabel_visueel"),
-               htmlOutput("vertaaltabel_kennis_ervaring"))
+      bslib::nav_insert(
+        id  = "tabset",
+        target  = "panel_rapport",
+        position = "after",
+        session = session,
+        bslib::nav_panel(
+          title = span(vertaler$t("voorlopige_conclusie"), class = "custom-tab"),
+          value = "panel_voorlopige_conclusie",
+          class = "p-4",
+          
+          card(
+            card_header(
+              layout_columns(
+                col_widths = breakpoints(
+                  xs = c(12, 12, 12),
+                  sm = c(4, 4, 4),
+                  md = c(3, 6, 3)
+                ),
+                
+                actionButton(
+                  class = "back_button",
+                  inputId = 'jump_back_ToP_rapport',
+                  label = vertaler$t("vorige_pagina")
+                ),
+                
+                NULL,
+                
+                actionButton(
+                  class = "werk_button",
+                  inputId = 'jumpToP_projecties',
+                  label = vertaler$t("projecties")
+                ),
+                
+                div()  # placeholder for symmetry
+              )
             ),
-        target = "panel_rapport", position = "after",
-        select = TRUE, session = getDefaultReactiveDomain())
-    insertTab(inputId = "tabset",
-        tabPanel(title = span(vertaler$t("projecties"), class = "custom-tab"), value = "panel_projecties",
-                 h3(vertaler$t("projecties_in_rapport")),
-                 h4(vertaler$t("voor_toelichting_zie_rapport")),
-                 actionButton(class = "back_button", 'jump_back_ToP_voorlopige_conclusie', vertaler$t("vorige_pagina")),
-                 actionButton(class = "werk_button", 'jumpToP_tabel', vertaler$t("tabel")),
-                 scenariosplot_module_UI(id = "scenariosplot_module", vertaler = vertaler)
-        ),
-        target = "panel_voorlopige_conclusie", position = "after",
-        select = TRUE, session = getDefaultReactiveDomain())
-    insertTab(inputId = "tabset",
-      tabPanel(title = span(vertaler$t("tabel"), class = "custom-tab"), value = "panel_tabel",
-               actionButton(class = "back_button", 'jump_back_ToP_projecties', vertaler$t("vorige_pagina")),
-               #actionButton(class = "button", 'jumpToP_belangrijke_informatie', "Belangrijke informatie"),
-               #actionButton(class = "back_button", 'jump_back_ToP_tabel', 'Ga terug'),
-               #actionButton(class = "werk_button", 'jumpToP_start', vertaler$t("ga_terug_naar_start")),
-               actionButton(class = "werk_button", 'jumpToP_taal', vertaler$t("ga_terug_naar_start")),
-               h3(vertaler$t("tabel_in_rapport")),
-               h4(vertaler$t("voor_toelichting_zie_rapport")),
-               shinycssloaders::withSpinner(
-                 tableOutput("tabel_rapport"),
-                 color = euroblue, #kleur van spinner
-               )
-      ),
-      target = "panel_projecties", position = "after",
-      select = TRUE, session = getDefaultReactiveDomain())
-      }
+            
+            card_body(
+              h3(vertaler$t("resultaat_per_categorie")),
+              # First table – centered (unchanged from before)
+              div(
+                style = "display: flex; justify-content: center; margin: 1rem 0;",
+                shinycssloaders::withSpinner(
+                  p(style = "text-align: justify; max-width: 900px;",
+                    htmlOutput("check_pagina")
+                  ),
+                  color = euroblue
+                )
+              ),
+              
+              h5(textOutput('profiel_conclusie_tekst')),
+              h5(vertaler$t("vertaling_punten_naar_profiel_uitleg")),
+              
+              # 5 translation tables – side by side, natural width, title on top
+              div(
+                style = "display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; margin-top: 1.5rem;",
+                
+                # Each table gets its own container with natural width
+                div(
+                  style = "flex: 0 1 auto; min-width: 220px; max-width: 380px;",  # adjust min/max as needed
+                  h5(style = "text-align: center; margin-bottom: 0.6rem; font-weight: 600;", 
+                     vertaler$t("beleggingsdoelstelling")),  # ← title ABOVE
+                  htmlOutput("vertaaltabel_beleggingsdoelstelling")
+                ),
+                
+                div(
+                  style = "flex: 0 1 auto; min-width: 220px; max-width: 380px;",
+                  h5(style = "text-align: center; margin-bottom: 0.6rem; font-weight: 600;", 
+                     vertaler$t("financiele_situatie")),
+                  htmlOutput("vertaaltabel_financiele_situatie")
+                ),
+                
+                div(
+                  style = "flex: 0 1 auto; min-width: 220px; max-width: 380px;",
+                  h5(style = "text-align: center; margin-bottom: 0.6rem; font-weight: 600;", 
+                     vertaler$t("risicobereidheid")),
+                  htmlOutput("vertaaltabel_risicobereidheid")
+                ),
+                
+                div(
+                  style = "flex: 0 1 auto; min-width: 220px; max-width: 380px;",
+                  h5(style = "text-align: center; margin-bottom: 0.6rem; font-weight: 600;", 
+                     vertaler$t("visueel")),
+                  htmlOutput("vertaaltabel_visueel")
+                ),
+                
+                div(
+                  style = "flex: 0 1 auto; min-width: 220px; max-width: 380px;",
+                  h5(style = "text-align: center; margin-bottom: 0.6rem; font-weight: 600;", 
+                     vertaler$t("kennis_ervaring")),
+                  htmlOutput("vertaaltabel_kennis_ervaring")
+                )
+              )
+            ),
+            
+            card_footer(
+            )
+          )
+        )
+    )
+      # New: Projecties
+      bslib::nav_insert(
+        id  = "tabset",
+        target  = "panel_voorlopige_conclusie",
+        position = "after",
+        session = session,
+        bslib::nav_panel(
+          title = span(vertaler$t("projecties"), class = "custom-tab"),
+          value = "panel_projecties",
+          class = "p-4",
+          
+          card(
+            card_header(              
+              layout_columns(
+                col_widths = breakpoints(
+                  xs = c(12, 12, 12),     # stack on very small screens
+                  sm = c(4, 4, 4),        # roughly even on small
+                  md = c(3, 6, 3)         # desired 3-6-3 on medium and up
+                ),
+                
+                actionButton(
+                  class = "back_button",
+                  inputId = 'jump_back_ToP_voorlopige_conclusie',
+                  label = vertaler$t("vorige_pagina")
+                ),
+                
+                NULL,
+                
+                actionButton(
+                  class = "werk_button",
+                  inputId = 'jumpToP_tabel',
+                  label = vertaler$t("tabel")
+                ),
+                
+                # empty slot to maintain the 3-6-3 proportion
+                div()   # or tags$div() – can later become another button / spacer
+              )
+            ),
+            card_body(
+              h3(vertaler$t("projecties_in_rapport")),
+              h4(vertaler$t("voor_toelichting_zie_rapport")),
+              scenariosplot_module_UI(
+                id = "scenariosplot_module",
+                vertaler = vertaler
+              )
+            ),
+            card_footer(
+            )
+          )
+        )
+      )
+
+      # New: Tabel
+      bslib::nav_insert(
+        id  = "tabset",
+        target  = "panel_projecties",
+        position = "after",
+        session = session,
+        bslib::nav_panel(
+          title = span(vertaler$t("tabel"), class = "custom-tab"),
+          value = "panel_tabel",
+          class = "p-4",
+          
+          card(
+            card_header(
+              layout_columns(
+                col_widths = breakpoints(
+                  xs = c(12, 12, 12),           # stack on very small screens
+                  sm = c(4, 4, 4),              # roughly even on small
+                  md = c(3, 6, 3)               # your desired 3-6-3 on medium+
+                ),
+                
+                actionButton(
+                  class = "back_button",
+                  inputId = 'jump_back_ToP_projecties',
+                  label = vertaler$t("vorige_pagina")
+                ),
+                
+                NULL,
+                
+                actionButton(
+                  class = "werk_button",
+                  inputId = 'jumpToP_taal',
+                  label = vertaler$t("ga_terug_naar_start")
+                ),
+                
+                # empty slot or placeholder if you want symmetry / future button
+                div()   # or tags$div() or another button if needed
+              )
+            ),
+            
+            card_body(
+              h3(vertaler$t("tabel_in_rapport")),
+              h4(vertaler$t("voor_toelichting_zie_rapport")),
+              
+              shinycssloaders::withSpinner(
+                tableOutput("tabel_rapport"),
+                color = euroblue
+              )
+            ),
+            
+            card_footer(
+            )
+          )
+        )
+      )
+    }
   shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_voorlopige_conclusie"]')
   updateTabsetPanel(session, inputId = "tabset", selected = "panel_voorlopige_conclusie")
   geklikt_op_voorlopige_conclusie$geklikt <- 1
@@ -1384,39 +2042,39 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       min-height: 100vh !important;       /* Volledige schermhoogte */
       padding: 0 !important;
     }
-    
+
     .modal-dialog {
       margin: 0 auto !important;          /* Geen automatische margins */
       max-width: 800px !important;        /* Jouw gewenste breedte */
       width: 90% !important;              /* Responsive op kleine schermen */
     }
-    
+
     .modal-content {
       box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
   "))
   )
-  
+
   observeEvent(input$grafieken_info1, {
     showModal(modalDialog(
       title = NULL,
       size = "l",
       easyClose = TRUE,
-      
+
       tags$div(
         style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
         # Logo bovenaan
         tags$div(
           style = "margin-bottom: 30px;",
-          tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
+          tags$img(src = "logo.png", width = "300px", style = "display: block; margin: 0 auto;")
         ),
         tags$h3(vertaler$t("toelichting_grafieken"), style = "margin-bottom: 20px;"),
         tags$p(
           vertaler$t("grafieken_toelichting_intro"), tags$br(),
           vertaler$t("getoonde_bedragen_in_toelichting_grafieken"),
           format_bedrag_tabellen(startvermogen(), big_mark(), decimal_mark()), ". ",
-          vertaler$t("eventuele_so_buiten_beschouwing_gelaten"), 
-          tags$br(), 
+          vertaler$t("eventuele_so_buiten_beschouwing_gelaten"),
+          tags$br(),
           vertaler$t("toelichting_grafieken_gunstig_ongunstig"),
           vertaler$t("toelichting_grafieken_grotere_spreiding")
         )
@@ -1433,7 +2091,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       )
     ))
   })
-  
+
   # Sluit modal bij klik op OK, werkt voor alle dialoogjes
   observeEvent(input$modal_ok, {
     removeModal()
@@ -1444,21 +2102,21 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       title = NULL,
       size = "l",
       easyClose = TRUE,
-      
+
       tags$div(
         style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
         # Logo bovenaan
         tags$div(
           style = "margin-bottom: 30px;",
-          tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
+          tags$img(src = "logo.png", width = "300px", style = "display: block; margin: 0 auto;")
         ),
         tags$h3(vertaler$t("toelichting_grafieken"), style = "margin-bottom: 20px;"),
         tags$p(
           vertaler$t("grafieken_toelichting_intro2"), tags$br(),
           vertaler$t("getoonde_bedragen_in_toelichting_grafieken"),
           format_bedrag_tabellen(startvermogen(), big_mark(), decimal_mark()), ". ",
-          vertaler$t("eventuele_so_buiten_beschouwing_gelaten"), 
-          tags$br(), 
+          vertaler$t("eventuele_so_buiten_beschouwing_gelaten"),
+          tags$br(),
           vertaler$t("toelichting_grafieken_gunstig_ongunstig"),
           vertaler$t("toelichting_grafieken_grotere_spreiding2")
         )
@@ -1475,7 +2133,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       )
     ))
   })
-  
+
 
   #functie voor aantal punten die vraag x oplevert
   aantal_punten_vraag_x <- function(x) {
@@ -1513,20 +2171,20 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   })
 
   private_beleggingen_uitvragen <- reactive({
-    #uitvragen als 
+    #uitvragen als
     #startvermogen >= 2000000 en horizon >= 5 en antw op "deel" is een kwart of minder OF
-     (startvermogen() >= 2000000 & horizon() >= 5 & 
+     (startvermogen() >= 2000000 & horizon() >= 5 &
         output_antwoord(vraagnummers_categorie("financiele_situatie")[3]) == opties_vraag(vraagnummers_categorie("financiele_situatie")[3])[2]) | #een hoger want 1e antw is "Maak een keuze"
     # #startvermogen >= 3000000 en horizon >= 5 en antw op "deel" is is ongeveer de helft of een kwart of minder OF
-     (startvermogen() >= 3000000 & horizon() >= 5 & 
+     (startvermogen() >= 3000000 & horizon() >= 5 &
         output_antwoord(vraagnummers_categorie("financiele_situatie")[3]) == opties_vraag(vraagnummers_categorie("financiele_situatie")[3])[2]) |
-      (startvermogen() >= 3000000 & horizon() >= 5 & 
+      (startvermogen() >= 3000000 & horizon() >= 5 &
         output_antwoord(vraagnummers_categorie("financiele_situatie")[3]) == opties_vraag(vraagnummers_categorie("financiele_situatie")[3])[3]) |
       #    (output_antwoord(vraagnummers_categorie("financiele_situatie")[3]) == opties_vraag(vraagnummers_categorie("financiele_situatie")[3])[3])) |
-    # #startvermogen >= 5000000 en horizon >= 5  
+    # #startvermogen >= 5000000 en horizon >= 5
     (startvermogen() >= 5000000 & horizon() >= 5)
   })
-  
+
   #tabellen maken aantal punten naar profielen, per categorie
   vertaaltabel_punten_profiel_categorie <- function(categorie) {
     min_punten <- max_min_punten_categorie(categorie, "min")
@@ -1558,72 +2216,74 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
  vertaaltabel <- function(categorie) {
     vertaaltabel_punten_profiel_categorie(categorie) %>%
       kbl(caption = tolower(vertaler$t(categorie)), align = "c") %>%
-      kable_styling(font_size = 12, "striped", full_width = FALSE, position = "float_left") %>% 
+      kable_styling(font_size = 12, "striped", full_width = FALSE, position = "float_left") %>%
       column_spec(column = 2, width = "4cm")
  }
- 
- #gelegenheids 
+
+ #gelegenheids
  vertaaltabel_categorie <- function(categorie) {
-   
+
    punten_kolom_naam <- vertaler$t("punten")
    profiel_kolom_naam <- vertaler$t("profiel")
-   
+
    tabel <-
      vertaaltabel_punten_profiel_categorie(categorie) %>%
      rename(!!punten_kolom_naam := punten,
             !!profiel_kolom_naam := profiel)
-   
-   tabel %>% 
-     kbl(caption = tolower(vertaler$t(categorie)), align = "c") %>%
+
+   tabel %>%
+     kbl(caption = NULL, #tolower(vertaler$t(categorie)), 
+         align = "c") %>%
      row_spec(which(tabel[[punten_kolom_naam]] == aantal_punten_categorie(categorie)),
-              color = euroblue, background = "lightgray", bold = TRUE) %>% 
-     kable_styling(font_size = 12, "striped", full_width = FALSE, position = "float_left") %>% 
+              color = euroblue, background = "lightgray", bold = TRUE) %>%
+     kable_styling(font_size = 12, "striped", full_width = FALSE, position = "float_left") %>%
      column_spec(column = 2, width = "4cm")
  }
- 
+
  output$vertaaltabel_beleggingsdoelstelling <- reactive({
    vertaaltabel_categorie("beleggingsdoelstelling")
   })
- 
+
  #tabellen maken voor pagina conclusie
   # output$vertaaltabel_beleggingsdoelstelling <- reactive({
-  #   vertaaltabel("beleggingsdoelstelling") |> 
+  #   vertaaltabel("beleggingsdoelstelling") |>
   #   row_spec(which(vertaaltabel_punten_profiel_categorie("beleggingsdoelstelling")$punten == aantal_punten_categorie("beleggingsdoelstelling")),
   #                     color = euroblue, background = "lightgray", bold = TRUE)
   # })
   output$vertaaltabel_financiele_situatie <- reactive({
-    vertaaltabel_categorie("financiele_situatie") 
-    #vertaaltabel("financiele_situatie") |> 
+    vertaaltabel_categorie("financiele_situatie")
+    #vertaaltabel("financiele_situatie") |>
  #   row_spec(which(vertaaltabel_punten_profiel_categorie("financiele_situatie")$punten == aantal_punten_categorie("financiele_situatie")),
 #             color = euroblue, background = "lightgray", bold = TRUE)
   })
   output$vertaaltabel_kennis_ervaring <- reactive({
-    vertaaltabel_categorie("kennis_ervaring") %>% 
-    #vertaaltabel("kennis_ervaring") |> 
+    vertaaltabel_categorie("kennis_ervaring") %>%
+    #vertaaltabel("kennis_ervaring") |>
     #row_spec(which(vertaaltabel_punten_profiel_categorie("kennis_ervaring")$punten == aantal_punten_categorie("kennis_ervaring")),
-    #         color = euroblue, background = "lightgray", bold = TRUE) |> 
+    #         color = euroblue, background = "lightgray", bold = TRUE) |>
     column_spec(c(1,2), italic = TRUE)
   })
   output$vertaaltabel_risicobereidheid <- reactive({
-    vertaaltabel_categorie("risicobereidheid")  
-    #vertaaltabel("risicobereidheid") |> 
+    vertaaltabel_categorie("risicobereidheid")
+    #vertaaltabel("risicobereidheid") |>
     #row_spec(which(vertaaltabel_punten_profiel_categorie("risicobereidheid")$punten == aantal_punten_categorie("risicobereidheid")),
     #         color = euroblue, background = "lightgray", bold = TRUE)
   })
-  
-  
-  output$vertaaltabel_visueel <- function() { 
+
+
+  output$vertaaltabel_visueel <- function() {
     #visueel is verhaal apart
-    #gewoon een tibble maken  
+    #gewoon een tibble maken
     punten_kolom_naam <- vertaler$t("punten")
     profiel_kolom_naam <- vertaler$t("profiel")
-    
-    tabel <- tribble(~punten, ~profiel, 1, "RM100",  2, "RD30RM70", 3, "RD50RM50", 4, "RD70RM30", 5, "RD100") %>% 
+
+    tabel <- tribble(~punten, ~profiel, 1, "RM100",  2, "RD30RM70", 3, "RD50RM50", 4, "RD70RM30", 5, "RD100") %>%
     rename(!!punten_kolom_naam := punten,
            !!profiel_kolom_naam := profiel)
-    
-    tabel %>% 
-      kbl(caption = vertaler$t("visueel"), align = "c") %>%
+
+    tabel %>%
+      kbl(caption = NULL, #vertaler$t("visueel"), 
+          align = "c") %>%
       kable_styling(font_size = 12, "striped", full_width = FALSE, position = "float_left") %>%
       column_spec(column = 2, width = "4cm") %>%
       row_spec(which(profiel_levels == keuze_visueel2()),
@@ -1645,58 +2305,58 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
 
   tabel_profielen_per_categorie <- reactive({
     tribble(~categorie, ~`aantal vragen`, ~punten, ~min, ~max, ~profiel,
-            
+
             vertaler$t("beleggingsdoelstelling_kleine_letter"),
             length(vraagnummers_categorie("beleggingsdoelstelling"))-1, #minus de vraag zonder punten
             aantal_punten_beleggingsdoelstelling(),
             max_min_punten_categorie("beleggingsdoelstelling", "min"),
             max_min_punten_categorie("beleggingsdoelstelling", "max"),
             profiel_beleggingsdoelstelling(),
-            
+
             vertaler$t("financiële_situatie_kleine_letter"),
             length(vraagnummers_categorie("financiele_situatie")),
             aantal_punten_financiele_situatie(),
             max_min_punten_categorie("financiele_situatie", "min"),
             max_min_punten_categorie("financiele_situatie", "max"),
             profiel_financiele_situatie(),
-            
+
             vertaler$t("risicobereidheid_kleine_letter"),
             length(vraagnummers_categorie("risicobereidheid")),
             aantal_punten_risicobereidheid(),
             max_min_punten_categorie("risicobereidheid", "min"),
             max_min_punten_categorie("risicobereidheid", "max"),
             profiel_risicobereidheid(),
-            
+
             vertaler$t("visueel"),
             2, #length(vraagnummers_categorie("visueel")),
             which(profiel_levels == keuze_visueel2()),
             1,
             5,
             keuze_visueel2(),
-            
+
             vertaler$t("kennis_en_ervaring_telt_niet_mee"),
             length(vraagnummers_categorie("kennis_ervaring")),
             aantal_punten_kennis_ervaring(),
             max_min_punten_categorie("kennis_ervaring", "min"),
             max_min_punten_categorie("kennis_ervaring", "max"),
             profiel_kennis_ervaring()
-            ) %>% 
-      rename(!!vertaler$t("categorie") := categorie , 
-             !!vertaler$t("aantal_vragen") := `aantal vragen`, 
-             !!vertaler$t("punten") := punten, 
+            ) %>%
+      rename(!!vertaler$t("categorie") := categorie ,
+             !!vertaler$t("aantal_vragen") := `aantal vragen`,
+             !!vertaler$t("punten") := punten,
              !!vertaler$t("profiel") := profiel)
   })
 
   output$check_pagina <- function() {
-    
+
     profiel_kolom_naam <- vertaler$t("profiel")
     categorie_kolom_naam <- vertaler$t("categorie")
-    
+
     tabel_profielen_per_categorie() %>%
       kbl(caption = "", align = c("l", rep("c", 5))) %>%
       kable_styling(font_size = 15, "striped", full_width = FALSE, position = "left") %>%
       row_spec(which(tabel_profielen_per_categorie()[[profiel_kolom_naam]] == profiel_conclusie()),
-               color = euroblue, background = "lightgray", bold = TRUE) |> 
+               color = euroblue, background = "lightgray", bold = TRUE) |>
       row_spec(which(tabel_profielen_per_categorie()[[categorie_kolom_naam]] == vertaler$t("kennis_en_ervaring_telt_niet_mee")),
                italic = TRUE)
   }
@@ -1749,7 +2409,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
 
   #NAAR MODULE
     #barplots per bm
-    data_voor_barcharts <- 
+    data_voor_barcharts <-
        index_paden_360m_maal1000_params_12_36_60_120_360_geom_returns_met_bijst_onttr %>%
        filter(horizon == "3 jaar")
   #===
@@ -1766,7 +2426,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     {input$bijstorting}
     else {0}
    })
-  
+
   startvermogen <- reactive({
     input$startvermogen
   })
@@ -1785,19 +2445,19 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
              max = (1 + max) * startvermogen() + bijstorting() * bijstortingen_max)
     })
 
-  
+
     naam <- reactive(input$naam)
     naam_entiteit <- reactive(input$naam_entiteit)
     entiteit <- reactive(input$entiteit)
     emailadres <- reactive(input$emailadres)
- 
+
     de_org_aanduiding <- reactive({
       case_when(entiteit() == "bv" ~ vertaler$t("de_bv"),#de besloten vennootschap",
                 entiteit() == "st" ~ vertaler$t("de_st"),#"de stichting",
                 entiteit() == "ve" ~ vertaler$t("de_ve"),#"de vereniging",
                 entiteit() == "ov" ~ vertaler$t("de_ov")) #"de organisatie")
     })
-    
+
     output_antwoord <- function(id = 1) {
       str_c(eval(parse(text = str_c("input$", onderwerp_vraag(id)))))
     }
@@ -1830,20 +2490,20 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     else {vertaler$t("geen_jaarlijkse_bijstortingen_of_onttrekkingen")}
     )
 
-    #idee maak vraag, question en antwoord, 
+    #idee maak vraag, question en antwoord,
     # selecteer Vraan en Antwoord voor beleggingsvoorstel
     # selecteer question en antwoord voor rapport
     # en hernoem Antwoord met !!vertaler$t
-    
+
     data_rapport <- reactive( #deze tabel gaat naat PDF
                 tibble(Vraag = c(vertaler$t("uw_naam"),
                         vertaler$t("email_adres"),
                         vertaler$t("dit_beleggersprofiel_is_ingevuld_voor"),
-                        if(entiteit() %in% c("bv", "ve", "st", "ov")) 
+                        if(entiteit() %in% c("bv", "ve", "st", "ov"))
                           {str_c(vertaler$t("naam_van"), " ", de_org_aanduiding())} else {NULL}, #alleen voor st ve ov en bv anders NULL
-                        if(entiteit() %in% c("ve", "st", "ov")) 
+                        if(entiteit() %in% c("ve", "st", "ov"))
                            {vertaler$t("beleggingsstatuut")}
-                          else if(entiteit() == "bv") 
+                          else if(entiteit() == "bv")
                            {vertaler$t("pensioenbrief")}
                           else {NULL}, #eigenlijk liever helemaal geen rij dus NULL
                         vertaler$t("tijdstip_van_opsturen"),
@@ -1878,7 +2538,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                         map_chr(vraagnummers_categorie("overig"), vraag_met_subnummer),
                         str_c("   ", vertaler$t("toelichting_eventuele_overige_zaken")),
                         if(private_beleggingen_uitvragen() == TRUE) {" "} else {NULL},
-                        if(private_beleggingen_uitvragen() == TRUE) {vertaler$t("private_beleggingen")} else {NULL},  
+                        if(private_beleggingen_uitvragen() == TRUE) {vertaler$t("private_beleggingen")} else {NULL},
                         if(private_beleggingen_uitvragen() == TRUE) {map_chr(vraagnummers_categorie("private_beleggingen"), vraag_met_subnummer)} else {NULL}
                         ),
             Antwoord = c(naam(),
@@ -1891,12 +2551,12 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                         #beleggingsstatuut alleen als entiteit st, ve of ov is, anders nvt
                         if(entiteit() %in% c("ve", "st", "ov")) {
                           if(str_detect(input$beleggingsstatuut, "ja_beleggingsstatuut"))
-                            {vertaler$t("beleggingsstatuut_aanwezig")} else if 
+                            {vertaler$t("beleggingsstatuut_aanwezig")} else if
                           (str_detect(input$beleggingsstatuut, "nee_beleggingsstatuut"))
-                            {vertaler$t("geen_beleggingsstatuut_aanwezig")} 
+                            {vertaler$t("geen_beleggingsstatuut_aanwezig")}
                         } else if(entiteit() == "bv") {
                           if(str_detect(input$pensioenbrief, "ja_pensioenbrief"))
-                          {vertaler$t("pensioenbrief_aanwezig")} else if 
+                          {vertaler$t("pensioenbrief_aanwezig")} else if
                           (str_detect(input$pensioenbrief, "nee_pensioenbrief"))
                           {vertaler$t("geen_pensioenbrief_aanwezig")}
                         } else {NULL},
@@ -1932,21 +2592,21 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                         map_chr(vraagnummers_categorie("overig"), output_antwoord),
                         if(str_detect(input$overig, "nee")) {vertaler$t("n_v_t")} else {input$overig_toelichting},
                         if(private_beleggingen_uitvragen() == TRUE) {" "} else {NULL},
-                        if(private_beleggingen_uitvragen() == TRUE) {" "} else {NULL},  
+                        if(private_beleggingen_uitvragen() == TRUE) {" "} else {NULL},
                         if(private_beleggingen_uitvragen() == TRUE) {map_chr(vraagnummers_categorie("private_beleggingen"), output_antwoord)} else {NULL}
                         )
-                  ) |> 
+                  ) |>
                   mutate(Antwoord = str_remove(Antwoord, " - hieronder opent een tekstvakje waarin u een toelichting kunt schrijven"),
-                         Antwoord = str_remove(Antwoord, " - zie ook de invulvelden hieronder")) 
+                         Antwoord = str_remove(Antwoord, " - zie ook de invulvelden hieronder"))
             )
-    
-    
+
+
     data_rapport_AIRS <- reactive({ #deze tabel gaat naar beide CSV's
-      data <- 
-        data_rapport() |> 
+      data <-
+        data_rapport() |>
         # S/O op 0 indien daar geen sprake van is
-        mutate(Antwoord = 
-                 case_when(#hier profiel_levels_AIRS in plaats van profiel_levels en 
+        mutate(Antwoord =
+                 case_when(#hier profiel_levels_AIRS in plaats van profiel_levels en
                            str_detect(Vraag, vertaler$t("profiel_obv_beleggingsdoelstelling")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_beleggingsdoelstelling())],
                            str_detect(Vraag, vertaler$t("profiel_obv_financiele_situatie")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_financiele_situatie())],
                            str_detect(Vraag, vertaler$t("profiel_obv_risicobereidheid")) ~ profiel_levels_AIRS[which(profiel_levels == profiel_risicobereidheid())],
@@ -1962,9 +2622,9 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                Antwoord = ifelse(Antwoord == vertaler$t("pensioenbrief_aanwezig"), 1, Antwoord),
                Antwoord = ifelse(str_detect(Antwoord, vertaler$t("n_v_t")), 0, Antwoord),
                #format_bedrag vervangen door bedrag in het geval van startvermogen, startvermogen(), en eventuele bijstortingen (abs(bijstorting()))
-               Antwoord = ifelse(str_detect(Vraag, str_c("1 - ", vertaler$t("te_beleggen_vermogen"))), 
+               Antwoord = ifelse(str_detect(Vraag, str_c("1 - ", vertaler$t("te_beleggen_vermogen"))),
                                  vctrs::vec_cast(startvermogen(), integer()), Antwoord),
-               Antwoord = ifelse(str_detect(Vraag, str_c("2 - ", vertaler$t("jaarlijkse_bijstorting_of_onttrekking"))), 
+               Antwoord = ifelse(str_detect(Vraag, str_c("2 - ", vertaler$t("jaarlijkse_bijstorting_of_onttrekking"))),
                                  vctrs::vec_cast(bijstorting(), integer()), Antwoord),
                #privé vervangen door prive
                across(everything(), ~str_replace_all(., "é", "e")),
@@ -1973,53 +2633,53 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
                #underscore geeft problemen
                across(everything(), ~str_replace_all(., "_", " "))
                )
-      
+
       #3 regels invoegen bij prive en enof, want de andere varianten hebben 3 regels voor naam_entiteit en beleggingsstatuut EN pensioenbrief, ook al is het of beleggingsstatuut/of pensioenbrief
-      {if(!entiteit() %in% c("bv", "ve", "st", "ov")) data <- add_row(data, .before = which(data$Vraag == vertaler$t("tijdstip_van_opsturen")), Vraag = c("leeg", "leeg", "leeg"), Antwoord = c("0","0", "0")) else data} 
+      {if(!entiteit() %in% c("bv", "ve", "st", "ov")) data <- add_row(data, .before = which(data$Vraag == vertaler$t("tijdstip_van_opsturen")), Vraag = c("leeg", "leeg", "leeg"), Antwoord = c("0","0", "0")) else data}
 
       #als het een bv is dan 1 regel beleggingsstatuut = 0 invoegen voor de regel pensioenbrief
-      {if(entiteit() == "bv") data <- add_row(data, .before = which(data$Vraag == vertaler$t("pensioenbrief")), Vraag = c("leeg"), Antwoord = c("0")) else data} 
-      
+      {if(entiteit() == "bv") data <- add_row(data, .before = which(data$Vraag == vertaler$t("pensioenbrief")), Vraag = c("leeg"), Antwoord = c("0")) else data}
+
       #als het een st ve of ov is dan 1 regel pensioenbrief = 0 invoegen NA de regel beleggingsstatuut
-      {if(entiteit() %in% c("ve", "st", "ov")) data <- add_row(data, .after = which(data$Vraag == vertaler$t("beleggingsstatuut")), 
-                                                               Vraag = c("leeg"), Antwoord = c("0")) else data} 
-      
+      {if(entiteit() %in% c("ve", "st", "ov")) data <- add_row(data, .after = which(data$Vraag == vertaler$t("beleggingsstatuut")),
+                                                               Vraag = c("leeg"), Antwoord = c("0")) else data}
+
       #2 regels invoegen als meer_vragen_duurzaamheid() == FALSE, voor 4, check dit in sheet AIRS_kolom
       {if(meer_vragen_duurzaamheid() == FALSE) data <- add_row(data, .before = which(data$Vraag == str_c("VIII - ", vertaler$t("overig"))),
-                                                               Vraag = c("leeg", "leeg"), Antwoord = c("0","0")) else data} 
+                                                               Vraag = c("leeg", "leeg"), Antwoord = c("0","0")) else data}
 
       #1 regel toevoegen als het een bv is, de vraag naar de omvang van het eigen vermogen ontbreekt namelijk
       #vertaal opzoeken uit vragen_antwoorden_sheet_etc
       #HIER
       #{if(entiteit() == "bv") data <- add_row(data, .before =  which(data$Vraag == "1 - Het vermogen in de besloten vennootschap"), Vraag = "leeg", Antwoord = "0") else data}
       vraag1_eigen_vermogen_liquiditeit <- reactive({
-        vragen_antwoorden() %>% filter(onderwerp == "eigen_vermogen_liquiditeit") %>% select(vraag) %>% head(1) %>% pull() 
+        vragen_antwoorden() %>% filter(onderwerp == "eigen_vermogen_liquiditeit") %>% select(vraag) %>% head(1) %>% pull()
       })
-      {if(entiteit() == "bv") data <- add_row(data, .before =  which(data$Vraag == str_c("1 - ", vraag1_eigen_vermogen_liquiditeit())), 
+      {if(entiteit() == "bv") data <- add_row(data, .before =  which(data$Vraag == str_c("1 - ", vraag1_eigen_vermogen_liquiditeit())),
                                               Vraag = "leeg", Antwoord = "0") else data}
-      
+
       #3 lege regels private beleggingen uitvraag toevoegen na regel Vraag = "   Toelichting eventuele overige zaken" als private_beleggingen_uitvragen FALSE is
-      {if(private_beleggingen_uitvragen() == FALSE) data <- add_row(data, .after = which(data$Vraag == str_c("   ", vertaler$t("toelichting_eventuele_overige_zaken"))), 
+      {if(private_beleggingen_uitvragen() == FALSE) data <- add_row(data, .after = which(data$Vraag == str_c("   ", vertaler$t("toelichting_eventuele_overige_zaken"))),
                                                                     Vraag = c("leeg", "leeg", "leeg"), Antwoord = c("0", "0", "0")) else data}
-      
+
       #regel AIRS id's toevoegen
       data <- add_row(data, .before = 1, Vraag = "AIRS ID", Antwoord = "")
-      
+
       #kolom met AIRS headers toevoegen
       data <- data |> mutate(Vraag_AIRS = AIRS_en_Beleggersprofiel_NL_vragen_kolom$kolomnaam_AIRS,
                              Vraag_Beleggingsvoorstel_NL = AIRS_en_Beleggersprofiel_NL_vragen_kolom$kolomnaam_Beleggingsvoorstel_NL)
-      
+
       #data <- add_column(data, .before = 1, Vraag = AIRS_en_Beleggersprofiel_NL_vragen_kolom$kolomnaam_AIRS)
       data <- data |> mutate(Antwoord = ifelse(Vraag == "AIRS ID", 0, Antwoord))
-      
+
       data
     })
-    
+
     vette_regels <- reactive({
       c(
         which(str_detect(data_rapport()[[1]], vertaler$t("beleggingsdoelstelling"))),
         which(str_detect(data_rapport()[[1]], vertaler$t("beleggingsdoelstelling"))),
-        
+
       grep("I - Beleggingsdoelstelling |I - Investment |II - |V -|Voorlopige |Preliminary |Private",  data_rapport()$Vraag)
       )
       #hij pakt de eerste niet!?
@@ -2028,9 +2688,9 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     #html tabel voor op de pagina Tabel, na verzenden van het rapport
     output$tabel_rapport <- function() {
       data_rapport() %>%
-        as_tibble() %>% 
+        as_tibble() %>%
         rename(!!vertaler$t("vraag") := Vraag,
-               !!vertaler$t("antwoord") := Antwoord) %>% 
+               !!vertaler$t("antwoord") := Antwoord) %>%
         kbl() %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE, position = "center") %>%
         row_spec(vette_regels(), bold = TRUE)
@@ -2039,52 +2699,52 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     #barplot module (zowel in rapport als in app)
     barplot_een_Server(
         id = "een",
-        vertaler = vertaler, 
+        vertaler = vertaler,
         taal,
-        data_voor_barcharts = data_voor_barcharts, 
-        anoniem = TRUE, 
+        data_voor_barcharts = data_voor_barcharts,
+        anoniem = TRUE,
         startvermogen = startvermogen
       )
-    
+
     barplot_twee_Server(
       id = "twee",
       vertaler = vertaler,
       taal,
-      data_voor_barcharts = data_voor_barcharts, 
-      anoniem = TRUE, 
+      data_voor_barcharts = data_voor_barcharts,
+      anoniem = TRUE,
       keuze_visueel1 = keuze_visueel1,
       startvermogen = startvermogen
       )
-    
+
     #plot in rapport met anoniem = FALSE
-    bm_3jaars_plot <- 
+    bm_3jaars_plot <-
         barplot_drie_Server(
         id = "barplot_drie_module",
         vertaler = vertaler,
         taal,
-        data_voor_barcharts = data_voor_barcharts, 
+        data_voor_barcharts = data_voor_barcharts,
         anoniem = FALSE,
         profiel_conclusie = profiel_conclusie,
         startvermogen = startvermogen
         )
 
   #scenariosplot module (zowel in rapport als in app)
-  scenariosplot <-  
+  scenariosplot <-
     scenariosplotServer(
       id = "scenariosplot_module",
       vertaler = vertaler,
       taal,
-      df_bijstortingen_onttrekkingen_compleet_met_gem_start_ontt_euros = df_bijstortingen_onttrekkingen_compleet_met_gem_start_ontt_euros, 
+      df_bijstortingen_onttrekkingen_compleet_met_gem_start_ontt_euros = df_bijstortingen_onttrekkingen_compleet_met_gem_start_ontt_euros,
       horizon = horizon,
-      profiel_conclusie = profiel_conclusie, 
-      startvermogen = startvermogen, 
+      profiel_conclusie = profiel_conclusie,
+      startvermogen = startvermogen,
       bijstorting = bijstorting
     )
-  
-  rv <- reactiveValues(trigger_download = 0)   # NEW: to trigger real download after confirm
-  
 
-  
+  rv <- reactiveValues(trigger_download = 0)   # NEW: to trigger real download after confirm
+
+
+
   observeEvent(input$start_rapport, {
     showModal(modalDialog(
       title = NULL,
@@ -2095,7 +2755,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
         # Logo bovenaan
         tags$div(
           style = "margin-bottom: 30px;",
-          tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
+          tags$img(src = "logo.png", width = "300px", style = "display: block; margin: 0 auto;")
         ),
         tags$h3(vertaler$t("even_geduld"), style = "margin-bottom: 20px;"),
         tags$p(
@@ -2106,59 +2766,29 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       footer = tags$div(
         style = "text-align: center; width: 100%;",
         actionButton("bevestig_rapport_maken",
-                                      label = vertaler$t("rapport_maken_en_versturen"),
+                                      label = "OK",#vertaler$t("rapport_maken_en_versturen"),
                                       class = "button",
                                       icon = icon("check"))
        )
      )
     )
-      # title = NULL,
-      # size = "l",
-      # easyClose = TRUE,
-      # 
-      # tags$div(
-      #   style = "text-align: center; max-width: 800px; margin: 0 auto; color: #808080; font-size: 18px; padding: 30px;",
-      #   # Logo bovenaan
-      #   tags$div(
-      #     style = "margin-bottom: 30px;",
-      #     tags$img(src = "logo.png", width = "200px", style = "display: block; margin: 0 auto;")
-      #  ),
-      #   title = "Titel",#vertaler$t("bevestig_genereer_rapport"),   # e.g. "Bevestig rapport genereren"
-      #   size = "m",
-      #   easyClose = FALSE
-      # ),
-      #   footer = tagList(
-      #     modalButton("annuleren"),#vertaler$t("annuleren")),
-      #     actionButton("bevestig_rapport_maken",
-      #                  label = "start rapport", #vertaler$t("ok_start_download"),
-      #                  class = "button",
-      #                  icon = icon("check"))
-      #   ),
-      #   tags$div(
-      #     style = "text-align: center; padding: 20px;",
-      #     tags$h4(vertaler$t("rapport_maken_en_versturen")),
-      #     #tags$p(vertaler$t("na_ok_start_download")),   # customize these translations
-      #     tags$p(style = "color: #666; font-size: 0.95em;",
-      #            vertaler$t("het_maken_en_versturen_kan_even_duren"))
-      #   )
-      # ))
   })
-  
-  
+
+
   observeEvent(input$bevestig_rapport_maken, {
     removeModal()
     rv$trigger_download <- rv$trigger_download + 1
   })
-  
+
     #waarde voor download teller op nul stellen
     #waarde voor tijdstip op nul stellen
     #beide worden in downloadHandler actueel gemaakt, waarna ook de knop "naar_voorlopige_conclusie" verschijnt
-    download <- reactiveValues(aantal_downloads = 0, 
+    download <- reactiveValues(aantal_downloads = 0,
                                download_tijdstip = NULL,
                                success_trigger = 0
                                )
-    
-    
+
+
     output$rapport_hidden <- downloadHandler(
       
       filename = function() {
@@ -2264,7 +2894,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
             
             # Emails (your original code – adjust if/smtp_username logic as needed)
             message("Sending message to ", input$emailadres, ".")
-
+            
             #versturen beleggersprofiel pdf rapport naar client
             #in testmodus vanuit pp anders vanuit ba
             verzenden <- if (test_modus()) smtp_pp else smtp_ba
@@ -2274,27 +2904,27 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
               to = unlist(str_split(str_replace_all(str_replace_all(input$emailadres, ";", ","), " ", ""), ",")),
               cc = if(test_modus()) {NULL} else {"maingay@bavandoorn.nl"},
               subject = subject
-              ) %>%
-                text(str_c(vertaler$t("beleggersprofiel"), " ", naam_in_file_en_aanhef())) %>%
-                attachment(file, disposition = "attachment", name = pdf_filename) |>
+            ) %>%
+              text(str_c(vertaler$t("beleggersprofiel"), " ", naam_in_file_en_aanhef())) %>%
+              attachment(file, disposition = "attachment", name = pdf_filename) |>
               verzenden()
-
+            
             setProgress(value = 0.9, message = vertaler$t("rapport_versturen"))
-
+            
             #versturen beleggersprofiel pdf rapport naar client
             envelope(
               from = if(test_modus()) {smtp_username_pp} else {smtp_username_ba},
               to = if(test_modus()) {"pieterprins@yahoo.com"} else {"administratie@bavandoorn.nl"},
               subject = subject
-              ) %>%
-                text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>%
-                attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
-                attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
-                attachment(file, disposition = "attachment", name = pdf_filename) |>
-                attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
-                attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
+            ) %>%
+              text(str_c("Beleggersprofiel ", naam_in_file_en_aanhef(), " csv-, pdf- en png-bestanden")) %>%
+              attachment(str_c("Beleggersprofiel_voor_AIRS ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+              attachment(str_c("Beleggersprofiel_voor_Beleggingsvoorstel ", naam_in_file_en_aanhef(), " - ", download$download_tijdstip, ".csv")) %>%
+              attachment(file, disposition = "attachment", name = pdf_filename) |>
+              attachment(file.path(tmp_dir, png_3jrs_name), disposition = "attachment", name = png_3jrs_name) %>%
+              attachment(file.path(tmp_dir, png_scen_name), disposition = "attachment", name = png_scen_name) %>%
               verzenden()
-
+            
             setProgress(value = 0.99)
             
             # Success!
@@ -2309,20 +2939,20 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       
       contentType = "application/pdf"
     )
-  
+
     outputOptions(output, "rapport_hidden", suspendWhenHidden = FALSE)
-    
+
     # 4. Auto-trigger hidden download button click after confirm
     observe({
       req(rv$trigger_download > 0)
-      
+
       # Add a 300–800 ms delay to let Shiny bind the download link properly
       shinyjs::delay(
         500,  # try 300 first; increase to 800 if still HTML
         shinyjs::click("rapport_hidden")
       )
     })
-    
+
     # 5. Your existing success modal (unchanged)
     # observeEvent(download$success_trigger, {
     #   req(download$success_trigger > 0)
@@ -2351,7 +2981,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
     #     )
     #   ))
     # })
-    
+
     # Optional: cleanup on session end (you already have something similar – keep/adapt)
     session$onSessionEnded(function() {
       # your unlink logic for temp files / wildcards
@@ -2362,7 +2992,7 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       unlink(c(wildcard_files1, wildcard_files2))
       cat("Sessie Einde\n")
     })
-    
+
   } #server
 
 # Run the application
