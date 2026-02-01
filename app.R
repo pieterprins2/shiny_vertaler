@@ -1352,25 +1352,54 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
   }
 
   #aparte voor visuele keuzes 1 en 2, met Setnames voor meerdere talen
-  output$ui_selectize_visuele_keuze1 <- renderUI ({
-    selectizeInput(inputId = "visuele_keuze1",
-                   label = vertaler$t("welke_figuur_in_eerste_instantie"),
-                   choices = c(vertaler$t("maak_keuze"),
-                               setNames("de_linker_illustratie", vertaler$t("de_linker_illustratie")),
-                               setNames("de_rechter_illustratie", vertaler$t("de_rechter_illustratie"))),
-                   selected = if(test_modus()) {"de_linker_illustratie"} else {vertaler$t("maak_keuze")},
-                   width = '600px'
+  # output$ui_selectize_visuele_keuze1 <- renderUI ({
+  #   selectizeInput(inputId = "visuele_keuze1",
+  #                  label = vertaler$t("welke_figuur_in_eerste_instantie"),
+  #                  choices = c(vertaler$t("maak_keuze"),
+  #                              setNames("de_linker_illustratie", vertaler$t("de_linker_illustratie")),
+  #                              setNames("de_rechter_illustratie", vertaler$t("de_rechter_illustratie"))),
+  #                  selected = if(test_modus()) {"de_linker_illustratie"} else {vertaler$t("maak_keuze")},
+  #                  width = '600px'
+  #   )
+  # })
+  output$ui_selectize_visuele_keuze1 <- renderUI({
+    shinyWidgets::radioGroupButtons(
+      inputId = "visuele_keuze1",
+      label   = vertaler$t("welke_figuur_in_eerste_instantie"),
+                          choices = c(setNames("de_linker_illustratie", vertaler$t("de_linker_illustratie")),
+                                      setNames("maak_keuze_links_of_rechts", vertaler$t("maak_keuze_links_of_rechts")),
+                                      setNames("de_rechter_illustratie", vertaler$t("de_rechter_illustratie"))
+                                      ),
+      selected = if (test_modus()) {"de_linker_illustratie"} else {"maak_keuze_links_of_rechts"},
+      direction = "horizontal",
+      justified = TRUE,
+      width = "1300px"
     )
   })
-  output$ui_selectize_visuele_keuze2 <- renderUI ({
-    selectizeInput(inputId = "visuele_keuze2",
-                   label = vertaler$t("spreekt_een_van_beide_u_meer_aan"),
-                   choices = c(vertaler$t("maak_keuze"),
-                               setNames("de_linker_illustratie", vertaler$t("de_linker_illustratie")),
-                               setNames("de_midden_illustratie", vertaler$t("de_midden_illustratie")),
-                               setNames("de_rechter_illustratie", vertaler$t("de_rechter_illustratie"))),
-                   selected = if(test_modus()) {"de_midden_illustratie"} else {vertaler$t("maak_keuze")},
-                   width = '600px'
+  
+  # output$ui_selectize_visuele_keuze2 <- renderUI ({
+  #   selectizeInput(inputId = "visuele_keuze2",
+  #                  label = vertaler$t("spreekt_een_van_beide_u_meer_aan"),
+  #                  choices = c(vertaler$t("maak_keuze"),
+  #                              setNames("de_linker_illustratie", vertaler$t("de_linker_illustratie")),
+  #                              setNames("de_midden_illustratie", vertaler$t("de_midden_illustratie")),
+  #                              setNames("de_rechter_illustratie", vertaler$t("de_rechter_illustratie"))),
+  #                  selected = if(test_modus()) {"de_midden_illustratie"} else {vertaler$t("maak_keuze")},
+  #                  width = '600px'
+  #   )
+  # })
+  output$ui_selectize_visuele_keuze2 <- renderUI({
+    shinyWidgets::radioGroupButtons(
+      inputId = "visuele_keuze2",
+      label   = vertaler$t("spreekt_een_van_beide_u_meer_aan"),
+      choices = c(setNames("de_linker_illustratie", vertaler$t("de_linker_illustratie")),
+                  setNames("de_midden_illustratie", vertaler$t("de_midden_illustratie")),
+                  setNames("de_rechter_illustratie", vertaler$t("de_rechter_illustratie"))
+      ),
+      selected = "de_midden_illustratie",
+      direction = "horizontal",
+      justified = TRUE,
+      width = "1300px"
     )
   })
 
@@ -1642,13 +1671,13 @@ output$ui_vraag_beleggingsstatuut <- renderUI({
       shiny::validate(
         shiny::need(#eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("visueel")[1])))) !=
                      # opties_vraag(vraagnummers_categorie("visueel")[1])[1],
-                    input$visuele_keuze1 != vertaler$t("maak_keuze"),
+                    input$visuele_keuze1 != "maak_keuze_links_of_rechts",
                     vertaler$t("maak_een_keuze")
                     ))
     })
     shiny::req(#eval(parse(text = str_c("input$", onderwerp_vraag(vraagnummers_categorie("visueel")[1])))) !=
                  #opties_vraag(vraagnummers_categorie("visueel")[1])[1])
-      input$visuele_keuze1 != vertaler$t("maak_keuze"))
+      input$visuele_keuze1 != "maak_keuze_links_of_rechts")
     shinyjs::enable(selector = '.navbar-nav a[data-value = "panel_visuele_keuze2"]')
     delay(1000, #niet te snel drukken, anders "floept ie eruit"
     updateTabsetPanel(session, inputId = "tabset", selected = "panel_visuele_keuze2")
